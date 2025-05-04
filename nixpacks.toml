@@ -1,2 +1,5 @@
 [phases.setup]
-nixPkgs = ['python310', 'python310Packages.pip', 'gcc']
+nixPkgs = ['python310', 'python310Packages.pip']
+
+[phases.install]
+cmds = ["pip install -r requi.txt"]

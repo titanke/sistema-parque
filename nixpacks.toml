@@ -1,5 +1,11 @@
 [phases.setup]
-nixPkgs = ['python310', 'python310Packages.pip']
+nixPkgs = ['python310', 'python310Packages.pip', 'gcc']
 
 [phases.install]
-cmds = ["pip install -r requi.txt"]
+cmds = [
+  "pip install --upgrade pip",  # Opcional pero recomendado
+  "pip install -r requirements.txt"
+]
+
+[start]
+cmd = "gunicorn pos.wsgi:application --bind 0.0.0.0:8000"

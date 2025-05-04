@@ -3,3 +3,4 @@ django
 flask
 qrcode
 pillow
+gunicorn

@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = "America/lima"
+TIME_ZONE = "America/Lima"
 
 USE_I18N = True
 

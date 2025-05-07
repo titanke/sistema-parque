@@ -1,8 +1,11 @@
+from datetime import datetime
 from pickle import FALSE
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
-from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature
+from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, cashRegister
 from django.db.models import Count, Sum
+from django.contrib.auth.models import User
+
 from django.db.models.deletion import ProtectedError
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -11,7 +14,6 @@ from django.shortcuts import redirect
 from django.core.paginator import Paginator
 from django.db.models import Q
 import json, sys
-from datetime import date, datetime
 from django.db import transaction
 
 
@@ -255,11 +257,81 @@ def delete_payment(request):
             resp['message'] = f'Ocurrió un error inesperado: {str(e)}'
 
     return HttpResponse(json.dumps(resp), content_type="application/json")
-
-
-
 ""
+## Cash Register
+@login_required
+def cash_register(request):
+    search = request.GET.get('search', '')
 
+    color_list = cashRegister.objects.all()
+    # category_list = {}
+    context = {
+        'page_title':'Lista de Cajas',
+        'payment':color_list,
+    }
+    return render(request, 'posApp/cash_register.html',context)
+
+
+@login_required
+def manage_cash_register(request):
+    cash_register = {}
+    users = User.objects.all().order_by('username') 
+    if request.method == 'GET':
+        data = request.GET
+        id = ''
+        if 'id' in data:
+            id = data['id']
+        if id.isnumeric() and int(id) > 0:
+            cash_register = cashRegister.objects.filter(id=id).first()
+
+    context = {
+        'cash_register': cash_register,
+        'users': users  
+    }
+    return render(request, 'posApp/manage_cash_register.html', context)
+
+@login_required
+def save_cash_register(request):
+    data = request.POST
+    resp = {'status': 'failed'}
+    try:
+        user_id = data.get('user_id')
+        user = None
+        if user_id and user_id.isdigit():
+            try:
+                user = User.objects.get(id=int(user_id))
+            except User.DoesNotExist:
+                messages.error(request, 'El usuario seleccionado no existe.')
+                return HttpResponse(json.dumps(resp), content_type="application/json")
+
+        if (data['id']).isnumeric() and int(data['id']) > 0:
+            # Editar una caja registradora existente
+            try:
+                cash_reg = cashRegister.objects.get(id=int(data['id']))
+                cash_reg.opening_amount = data['opening_amount']
+                cash_reg.user = user  # Asigna el usuario seleccionado
+                cash_reg.save()
+                resp['status'] = 'success'
+                messages.success(request, 'Caja registradora actualizada correctamente.')
+            except cashRegister.DoesNotExist:
+                resp['status'] = 'failed'
+                messages.error(request, 'La caja registradora especificada no existe.')
+        else:
+            # Crear una nueva caja registradora
+            cash_reg = cashRegister(
+                opening_amount=data['opening_amount'],
+                user=user,  # Asigna el usuario seleccionado
+            )
+            cash_reg.save()
+            resp['status'] = 'success'
+            messages.success(request, 'Caja registradora agregada correctamente.')
+    except Exception as e:
+        resp['status'] = 'failed'
+        messages.error(request, f'Ocurrió un error al guardar la caja registradora: {e}')
+    return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+##
 
 @login_required
 def size(request):

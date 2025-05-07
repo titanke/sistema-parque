@@ -2,6 +2,7 @@ from datetime import datetime
 from unicodedata import category
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -25,6 +26,8 @@ from django.utils import timezone
 
     # def __str__(self):
     #     return self.firstname + ' ' +self.middlename + ' '+self.lastname + ' '
+    
+    
 class Category(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -71,6 +74,17 @@ class PaymentType(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
+class cashRegister(models.Model):
+    opening_amount = models.FloatField(default=0)
+    opening_date = models.DateTimeField(default=timezone.now)
+    close_date = models.DateTimeField(null=True, blank=True) 
+    sales = models.ManyToManyField('Sales', through='CashRegisterSales')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"Caja {self.id}"
 
 class Sales(models.Model):
     code = models.CharField(max_length=100)
@@ -79,17 +93,24 @@ class Sales(models.Model):
     descuento = models.FloatField(default=0)
     tax_amount = models.FloatField(default=0)
     tax = models.FloatField(default=0)
-    payment_type_id = models.ForeignKey(PaymentType, on_delete=models.RESTRICT)
+    payment_type_id = models.ForeignKey('PaymentType', on_delete=models.RESTRICT)
     tendered_amount = models.FloatField(default=0)
     amount_change = models.FloatField(default=0)
-    date_added = models.DateTimeField(default=timezone.now) 
-    date_updated = models.DateTimeField(auto_now=True) 
+    date_added = models.DateTimeField(default=timezone.now)
+    date_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.code
 
-#Caracteristicas
+class CashRegisterSales(models.Model):
+    cash_register = models.ForeignKey(cashRegister, on_delete=models.CASCADE)
+    sale = models.ForeignKey(Sales, on_delete=models.CASCADE)
+    date_added = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('cash_register', 'sale')
+
+#Caracteristicas
 class Size(models.Model):
     name = models.CharField(max_length=50, unique=True)  # Por ejemplo: "S", "M", "L", etc.
     status = models.IntegerField(default=1) 
@@ -142,9 +163,9 @@ class ProductFeature(models.Model):
 class salesItems(models.Model):
     sale_id = models.ForeignKey(Sales,on_delete=models.CASCADE)
     product_id = models.ForeignKey(Products,on_delete=models.RESTRICT)
-    feature_id = models.ForeignKey(ProductFeature, on_delete=models.CASCADE, null=True, blank=True)  # Opcional
+    feature_id = models.ForeignKey(ProductFeature, on_delete=models.CASCADE, null=True, blank=True)  
     price = models.FloatField(default=0)
     qty = models.FloatField(default=0)
     total = models.FloatField(default=0)
     
-
+    

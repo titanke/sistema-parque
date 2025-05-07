@@ -36,6 +36,11 @@ urlpatterns = [
     path('delete_product', views.delete_product, name="delete-product"),
     path('generate_qr', views.generate_qr, name="generate-qr"),
     path('upload-file', views.upload_file, name='upload_file'),
+    
+    path('cash_register', views.cash_register, name="cash_register-page"),
+    path('manage_cash_register', views.manage_cash_register, name="manage_cash_register-page"),
+    path('save_cash_register', views.save_cash_register, name="save_cash_register-page"),
+
     path('pos', views.pos, name="pos-page"),
     path('checkout-modal', views.checkout_modal, name="checkout-modal"),
     path('save-pos', views.save_pos, name="save-pos"),

@@ -41,7 +41,6 @@
             tendered_amount = tendered_amount > 0 ? tendered_amount : 0;
             $('[name="tendered_amount"]').val(tendered_amount)
             change = parseFloat(tendered_amount) - parseFloat(payable)
-            console.log("prueba")
             console.log(tendered_amount, payable)
             $('#payment_change').val(parseFloat(change).toLocaleString('en-US'))
             $('[name="amount_change"]').val(change)
@@ -58,9 +57,7 @@
                 this.reportValidity();
                 return false;
             }
-        
-
-
+    
             if ($('[name="amount_change"]').val() < 0) {
                 alert("El monto ofrecido es menor que el monto a pagar")
                 return false;

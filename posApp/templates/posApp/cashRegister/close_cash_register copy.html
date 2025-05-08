@@ -1,0 +1,81 @@
+<div class="container-fluid">
+    <form action="" id="cash_register-form">
+        <input type="hidden" name="id" value="{% if cash_register.pk %}{{cash_register.pk}}{% endif %}">
+        <div class="form-group mb-3">
+            <label for="opening_amount" class="control-label">Monto de Apertura</label>
+            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="opening_amount" class="control-label">Ingreso Total</label>
+            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="opening_amount" class="control-label">Gasto Total</label>
+            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="opening_amount" class="control-label">Monto Final</label>
+            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
+        </div>
+    </form>
+</div>
+<script>
+    /*
+    $(function() {
+    $('#cash_register-form').submit(function(e) {
+        e.preventDefault();
+        var _this = $(this);
+        $('.err-msg').remove();
+        var el = $('<div>');
+        el.addClass("alert alert-danger err-msg");
+        el.hide();
+        if (_this[0].checkValidity() == false) {
+        _this[0].reportValidity();
+        return false;
+        }
+        start_loader();
+        // Obtener el ID de la caja registradora del campo oculto
+        var cash_register_id = $('input[name="id"]').val();
+        $.ajax({
+        headers: {
+            "X-CSRFToken": '{{csrf_token}}'
+        },
+        url: "{% url 'close_cash_register' %}".replace('pk', cash_register_id),
+
+        cache: false,
+        contentType: false,
+        processData: false,
+        method: 'POST', 
+        type: 'POST',
+        dataType: 'json',
+        error: err => {
+            console.log(err);
+            alert_toast("An error occurred", 'error');
+            end_loader();
+        },
+        success: function(resp) {
+            if (typeof resp == 'object') {
+            if (resp.status == 'success') {
+                el.removeClass("alert alert-danger err-msg");
+                location.reload(); // Recargar la página para actualizar la información
+            } else if (resp.status == 'failed' && resp.message) {
+                el.text(resp.message);
+            } else {
+                el.text("An error occurred", 'error');
+                end_loader();
+                console.error(resp);
+            }
+            } else {
+                el.text("An error occurred", 'error');
+                end_loader();
+                console.error(resp);
+            }
+            _this.prepend(el);
+            el.show('slow');
+            $("html, body, .modal").scrollTop(0);
+            end_loader();
+        }
+        });
+    });
+    });*/
+</script>

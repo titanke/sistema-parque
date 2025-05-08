@@ -64,6 +64,18 @@
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ cat.pk }}" title="Edit">
                                 <i class="material-icons mdc-button__icon">edit</i>
                             </button>
+                            <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--dark mdc-ripple-upgraded generate-qr"
+                                    type="button"
+                                    data-id="{{ cat.pk }}"
+                                    onclick="window.location.href='{% url 'cash_register_detail-page' cat.pk %}'">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--warning mdc-ripple-upgraded close-cash-register-button"
+                                    type="button"
+                                    data-id="{{ cat.pk }}" 
+                                    title="Cerrar Caja">
+                                <i class="fa-solid fa-times-circle"></i> 
+                            </button>
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ cat.pk }}" title="Delete">
                                 <i class="material-icons mdc-button__icon">deleteoutline</i>
                             </button>
@@ -84,13 +96,15 @@
         $('.edit-data').click(function() {
             uni_modal("Editar", "{% url 'manage_cash_register-page' %}?id=" + $(this).attr('data-id'))
         })
+
+        $('.close-cash-register-button').click(function() {
+            uni_modal("Cerrar Caja", "{% url 'close-cash_register-modal' %}?id=" + $(this).attr('data-id'))
+        })
+
         $('.delete-data').click(function() {
             _conf("¿Esta seguro de borrar este campo?", "delete_payment", [$(this).attr('data-id')])
         })
-    
-
     })
-
 
     function delete_payment($id) {
         start_loader();
@@ -98,7 +112,7 @@
             headers: {
                 "X-CSRFToken": '{{csrf_token}}'
             },
-            url: "{% url 'delete-payment' %}",
+            url: "{% url 'delete-cash_register' %}",
             method: "POST",
             data: {
                 id: $id
@@ -106,7 +120,7 @@
             dataType: "json",
             error: err => {
                 console.log(err);
-                alert("Ocurrió un error al intentar eliminar el tipo de pago.");
+                alert("Ocurrió un error al intentar eliminar.");
                 end_loader();
             },
             success: function(resp) {

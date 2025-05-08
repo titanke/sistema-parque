@@ -28,12 +28,23 @@
     <div class="mdc-card py-2">
         <div class="d-flex justify-content-between align-items-center">
             <h4 class="card-title mb-0">Ventas</h4>
+            <div class="d-flex align-items-center">
+                <label for="cash_register_select" class="me-2">Caja Actual:</label>
+                <select id="cash_register_select" class="form-select form-select-sm" name="cash_register_id"> 
+                    {% for cash_register in cash_registers %}
+                        <option value="{{ cash_register.id }}">
+                            {{ cash_register.opening_date|date:"d/m/Y H:i:s" }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
     </div>
 </div>
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
         <form action="" id="pos-form">
+            <input type="hidden" name="cash_register_id" id="cash_register_id_input">
             <fieldset>
                 <legend>Agregrar producto</legend>
                 <div class="row align-items-end">
@@ -244,6 +255,16 @@
         const featureSelect = $('#feature-id');
         const featureContainer = $('#feature-select-container');
         const productSelect = $('#product-id');
+        const cashRegisterSelect = $('#cash_register_select'); // Get the cash register select element
+        const cashRegisterIdInput = $('#cash_register_id_input'); // Get the hidden input
+
+
+        cashRegisterSelect.change(function() {
+            cashRegisterIdInput.val($(this).val()); // Set the value of the hidden input
+        });
+
+        cashRegisterIdInput.val(cashRegisterSelect.val());
+
         // Evento al cambiar el producto seleccionado
         productSelect.change(function () {
             let productId = $(this).val();

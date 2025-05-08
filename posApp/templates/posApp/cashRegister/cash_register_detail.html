@@ -1,0 +1,83 @@
+{% extends "posApp/base.html" %} {% block pageContent %}
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+    <div class="mdc-card py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center"> {# Contenedor para la flecha y el título #}
+                <a href="{% url 'cash_register-page' %}" class="me-2" title="Regresar a la lista"> {# Enlace de regreso #}
+                    <i class="fa-solid fa-arrow-left"></i> {# Icono de flecha izquierda (asegúrate de tener Font Awesome cargado) #}
+                </a>
+                <h4 class="card-title mb-0">Detalle Caja</h4>
+            </div>
+            <div class="text-end">
+                <div>Cajero: <b>{{ cash_register.user.username }}</b></div>
+                <div>Fecha Apertura: {{ cash_register.opening_date|date:"d/m/Y H:i:s" }}</div>
+                <div>Estado: <b>{% if cash_register.close_date %}Cerrado{% else %}Abierto{% endif %}</b></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+    <div class="mdc-card">
+        <div class="row mb-3">
+            <div class="col-md-6 col-lg-4">
+              <form method="get" action="{% url 'cash_register-page' %}">
+                  <div class="input-group">
+                      <input type="text" name="search" class="form-control" placeholder="Buscar Tipo de Pago" value="{{ request.GET.search }}">
+                      <button type="submit" class="btn btn-primary">Buscar</button>
+                  </div>
+              </form>
+            </div>
+        </div>
+        <div class="table-responsive">
+
+        </div>
+    </div>
+</div>
+{% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    $(function() {
+        $('#create_new').click(function() {
+            uni_modal("Abrir Caja", "{% url 'manage_cash_register-page' %}")
+        })
+        $('.edit-data').click(function() {
+            uni_modal("Editar", "{% url 'manage_cash_register-page' %}?id=" + $(this).attr('data-id'))
+        })
+        $('.delete-data').click(function() {
+            _conf("¿Esta seguro de borrar este campo?", "delete_payment", [$(this).attr('data-id')])
+        })
+    
+
+    })
+
+
+    function delete_payment($id) {
+        start_loader();
+        $.ajax({
+            headers: {
+                "X-CSRFToken": '{{csrf_token}}'
+            },
+            url: "{% url 'delete-cash_register' %}",
+            method: "POST",
+            data: {
+                id: $id
+            },
+            dataType: "json",
+            error: err => {
+                console.log(err);
+                alert("Ocurrió un error al intentar eliminar.");
+                end_loader();
+            },
+            success: function(resp) {
+                if (typeof resp == 'object' && resp.status == 'success') {
+                    location.reload();
+                } else if (resp.status == 'failed' && resp.message) {
+                    alert(resp.message); 
+                } else {
+                    alert("Ocurrió un error inesperado.");
+                }
+                end_loader();
+            }
+        });
+    }
+</script>
+{% endblock ScriptBlock %}

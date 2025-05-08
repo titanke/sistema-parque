@@ -38,8 +38,13 @@ urlpatterns = [
     path('upload-file', views.upload_file, name='upload_file'),
     
     path('cash_register', views.cash_register, name="cash_register-page"),
+    path('cash_register_detail/<int:pk>/', views.cash_register_detail, name="cash_register_detail-page"),
+
     path('manage_cash_register', views.manage_cash_register, name="manage_cash_register-page"),
     path('save_cash_register', views.save_cash_register, name="save_cash_register-page"),
+    path('delete_cash_register', views.delete_cash_register, name="delete-cash_register"),
+    path('close_cash_register', views.close_cash_register, name="close-cash_register"),
+    path('close_cash_register_modal', views.close_cash_register_modal, name="close-cash_register-modal"),
 
     path('pos', views.pos, name="pos-page"),
     path('checkout-modal', views.checkout_modal, name="checkout-modal"),

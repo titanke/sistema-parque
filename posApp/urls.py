@@ -45,6 +45,9 @@ urlpatterns = [
     path('delete_cash_register', views.delete_cash_register, name="delete-cash_register"),
     path('close_cash_register', views.close_cash_register, name="close-cash_register"),
     path('close_cash_register_modal', views.close_cash_register_modal, name="close-cash_register-modal"),
+    path('cash_register_expenses', views.cash_register_expenses, name="cash_register-expenses"),
+    path('cash_register_expenses_modal', views.cash_register_expenses_modal, name="cash_register_expenses-modal"),
+    path('delete_cash_register_expenses', views.delete_cash_register_expenses, name="delete-cash_register_expenses"),
 
     path('pos', views.pos, name="pos-page"),
     path('checkout-modal', views.checkout_modal, name="checkout-modal"),

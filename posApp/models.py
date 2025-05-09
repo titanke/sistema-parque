@@ -6,28 +6,7 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
-# class Employees(models.Model):
-#     code = models.CharField(max_length=100,blank=True) 
-#     firstname = models.TextField() 
-#     middlename = models.TextField(blank=True,null= True) 
-#     lastname = models.TextField() 
-#     gender = models.TextField(blank=True,null= True) 
-#     dob = models.DateField(blank=True,null= True) 
-#     contact = models.TextField() 
-#     address = models.TextField() 
-#     email = models.TextField() 
-#     department_id = models.ForeignKey(Department, on_delete=models.CASCADE) 
-#     position_id = models.ForeignKey(Position, on_delete=models.CASCADE) 
-#     date_hired = models.DateField() 
-#     salary = models.FloatField(default=0) 
-#     status = models.IntegerField() 
-#     date_added = models.DateTimeField(default=timezone.now) 
-#     date_updated = models.DateTimeField(auto_now=True) 
 
-    # def __str__(self):
-    #     return self.firstname + ' ' +self.middlename + ' '+self.lastname + ' '
-    
-    
 class Category(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -76,16 +55,26 @@ class PaymentType(models.Model):
         return self.name
     
     
-class cashRegister(models.Model):
+class CashRegister(models.Model):
     opening_amount = models.FloatField(default=0)
     opening_date = models.DateTimeField(default=timezone.now)
-    close_date = models.DateTimeField(null=True, blank=True) 
+    close_date = models.DateTimeField(null=True, blank=True)
     sales = models.ManyToManyField('Sales', through='CashRegisterSales')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"Caja {self.id}"
 
+class Expense(models.Model):
+    description = models.CharField(max_length=255)
+    amount = models.FloatField()
+    expense_date = models.DateTimeField(default=timezone.now)
+    cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE, related_name='expenses', default=1) 
+
+    def __str__(self):
+        return self.description
+    
+    
 class Sales(models.Model):
     code = models.CharField(max_length=100)
     sub_total = models.FloatField(default=0)
@@ -103,7 +92,7 @@ class Sales(models.Model):
         return self.code
 
 class CashRegisterSales(models.Model):
-    cash_register = models.ForeignKey(cashRegister, on_delete=models.CASCADE)
+    cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE)
     sale = models.ForeignKey(Sales, on_delete=models.CASCADE)
     date_added = models.DateTimeField(auto_now_add=True)
 

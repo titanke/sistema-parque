@@ -1,0 +1,65 @@
+<div class="container-fluid">
+    <form action="" id="cash_register_expenses_form">
+        <input type="hidden" name="cash_register_id" value="{% if cash_register.pk %}{{ cash_register.pk }}{% endif %}">
+        <div class="form-group mb-3">
+            <label for="amount" class="control-label">Monto del Gasto</label>
+            <input type="number" name="amount" id="amount" class="form-control form-control-sm rounded-0" value="" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="description" class="control-label">Descripción del Gasto</label>
+            <input type="text" name="description" id="description" class="form-control form-control-sm rounded-0" value="" required>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(function() {
+        $('#cash_register_expenses_form').submit(function(e) {
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                headers: {
+                    "X-CSRFToken": '{{csrf_token}}'
+                },
+                url: "{% url 'cash_register-expenses' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occurred: " + resp.message); 
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.text(resp.msg)
+                    } else {
+                        el.text("An error occured", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>

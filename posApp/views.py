@@ -3,7 +3,7 @@ from django.utils import timezone
 from pickle import FALSE
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse
-from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, cashRegister, CashRegisterSales
+from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, CashRegister, CashRegisterSales, Expense
 from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 
@@ -264,7 +264,7 @@ def delete_payment(request):
 def cash_register(request):
     search = request.GET.get('search', '')
 
-    color_list = cashRegister.objects.all()
+    color_list = CashRegister.objects.all()
     # category_list = {}
     context = {
         'page_title':'Lista de Cajas',
@@ -274,14 +274,21 @@ def cash_register(request):
 
 @login_required
 def cash_register_detail(request, pk):
-    cash_register = get_object_or_404(cashRegister, pk=pk)  
+
+    cash_register = get_object_or_404(CashRegister, pk=pk)
+
+    expenses = cash_register.expenses.all()
+
+    cash_register_sales = CashRegisterSales.objects.filter(cash_register=cash_register)
+    sales = [crs.sale for crs in cash_register_sales] # Extract the Sales objects.
 
     context = {
-        'page_title':'Detalle Caja',
-        'cash_register': cash_register, 
+        'page_title': 'Detalle Caja',
+        'cash_register': cash_register,
+        'expenses': expenses,
+        'sales': sales,  # Add the sales data to the context
     }
     return render(request, 'posApp/cashRegister/cash_register_detail.html', context)
-
 
 @login_required
 def manage_cash_register(request):
@@ -293,7 +300,7 @@ def manage_cash_register(request):
         if 'id' in data:
             id = data['id']
         if id.isnumeric() and int(id) > 0:
-            cash_register = cashRegister.objects.filter(id=id).first()
+            cash_register = CashRegister.objects.filter(id=id).first()
 
     context = {
         'cash_register': cash_register,
@@ -318,18 +325,18 @@ def save_cash_register(request):
         if (data['id']).isnumeric() and int(data['id']) > 0:
             # Editar una caja registradora existente
             try:
-                cash_reg = cashRegister.objects.get(id=int(data['id']))
+                cash_reg = CashRegister.objects.get(id=int(data['id']))
                 cash_reg.opening_amount = data['opening_amount']
                 cash_reg.user = user  # Asigna el usuario seleccionado
                 cash_reg.save()
                 resp['status'] = 'success'
                 messages.success(request, 'Caja registradora actualizada correctamente.')
-            except cashRegister.DoesNotExist:
+            except CashRegister.DoesNotExist:
                 resp['status'] = 'failed'
                 messages.error(request, 'La caja registradora especificada no existe.')
         else:
             # Crear una nueva caja registradora
-            cash_reg = cashRegister(
+            cash_reg = CashRegister(
                 opening_amount=data['opening_amount'],
                 user=user,  # Asigna el usuario seleccionado
             )
@@ -346,7 +353,7 @@ def delete_cash_register(request):
     data = request.POST
     resp = {'status': ''}
     try:
-        cashRegister.objects.get(id=data['id']).delete()
+        CashRegister.objects.get(id=data['id']).delete()
         resp['status'] = 'success'
         messages.success(request, 'Caja Eliminada.')
 
@@ -370,13 +377,89 @@ def close_cash_register_modal(request):
         if 'id' in data:
             id = data['id']
         if id.isnumeric() and int(id) > 0:
-            cash_register = cashRegister.objects.filter(id=id).first()
+            cash_register = CashRegister.objects.filter(id=id).first()
 
     context = {
         'cash_register': cash_register,
     }
     return render(request, 'posApp/cashRegister/close_cash_register.html', context)
 
+@login_required
+def cash_register_expenses(request):
+
+    data = request.POST
+    resp = {'status': 'failed'}  
+    try:
+        cash_register_id = data.get('cash_register_id')
+        if not cash_register_id or not cash_register_id.isdigit() or int(cash_register_id) <= 0:
+            resp['message'] = 'ID de caja registradora inválido.'
+            messages.error(request, resp['message'])
+            return HttpResponse(json.dumps(resp), content_type="application/json", status=400)
+
+        cash_reg = get_object_or_404(CashRegister, id=int(cash_register_id))
+
+        expense_description = data.get('description')
+        expense_amount = data.get('amount')
+        
+        try:
+            expense_amount = float(expense_amount)
+        except ValueError:
+            resp['message'] = 'Monto inválido.'
+            messages.error(request, resp['message'])
+            return HttpResponse(json.dumps(resp), content_type="application/json", status=400)
+
+        Expense.objects.create(
+            cash_register=cash_reg,
+            description=expense_description,
+            amount=expense_amount,
+            expense_date=timezone.now(),
+        )
+
+        resp['status'] = 'success'
+        resp['message'] = 'Gasto registrado correctamente.'
+        messages.success(request, resp['message']) 
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+    except Exception as e:
+        resp['message'] = f'Ocurrió un error al registrar el gasto: {e}'
+        messages.error(request, resp['message'])
+    return HttpResponse(json.dumps(resp), content_type="application/json", status=500)
+    
+    
+@login_required
+def cash_register_expenses_modal(request):
+    cash_register = {}
+    if request.method == 'GET':
+        data = request.GET
+        id = ''
+        if 'id' in data:
+            id = data['id']
+        if id.isnumeric() and int(id) > 0:
+            cash_register = CashRegister.objects.filter(id=id).first()
+
+    context = {
+        'cash_register': cash_register,
+    }
+    return render(request, 'posApp/cashRegister/cash_register_expenses.html', context)
+
+@login_required
+def delete_cash_register_expenses(request):
+    data = request.POST
+    resp = {'status': ''}
+    try:
+        Expense.objects.get(id=data['id']).delete()
+        resp['status'] = 'success'
+        messages.success(request, 'Gasto Eliminado.')
+
+    except Exception as e:
+        if "restricted foreign keys" in str(e):
+            resp['status'] = 'failed'
+            resp['message'] = 'No se puede eliminar la caja seleccionada porque está relacionado con uno o más ventas.'
+        else:
+            resp['status'] = 'failed'
+            resp['message'] = f'Ocurrió un error inesperado: {str(e)}'
+
+    return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @login_required
@@ -387,12 +470,12 @@ def close_cash_register(request):
         if (data['id']).isnumeric() and int(data['id']) > 0:
             # Editar una caja registradora existente
             try:
-                cash_reg = cashRegister.objects.get(id=int(data['id']))
+                cash_reg = CashRegister.objects.get(id=int(data['id']))
                 cash_reg.close_date = timezone.now()
                 cash_reg.save()
                 resp['status'] = 'success'
                 messages.success(request, 'Caja registradora Cerrada correctamente.')
-            except cashRegister.DoesNotExist:
+            except CashRegister.DoesNotExist:
                 resp['status'] = 'failed'
                 messages.error(request, 'La caja registradora especificada no existe.')
 
@@ -748,7 +831,7 @@ def delete_product(request):
 @login_required
 def pos(request):
     products = Products.objects.filter(status=1)
-    cash_register = cashRegister.objects.all()
+    cash_register = CashRegister.objects.all()
     product_json = []
     for product in products:
         features = product.features.all()
@@ -778,8 +861,6 @@ def pos(request):
     return render(request, 'posApp/pos/pos.html', context)
 
 
-
-
 @login_required
 def checkout_modal(request):
     grand_total = 0
@@ -791,7 +872,6 @@ def checkout_modal(request):
         'payment': payment,
     }
     return render(request, 'posApp/pos/checkout.html',context)
-
 
 
 @login_required
@@ -825,7 +905,7 @@ def save_pos(request):
         
         # Get the cash register
         cash_register_id = data.get('cash_register_id')  # Get the cash register ID from the request
-        cash_register = cashRegister.objects.filter(id=cash_register_id).first() if cash_register_id else None
+        cash_register = CashRegister.objects.filter(id=cash_register_id).first() if cash_register_id else None
         
         i = 0
         for prod in data.getlist('product_id[]'):

@@ -1,94 +1,116 @@
 {% extends "posApp/base.html" %} {% block pageContent %}
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center"> {# Contenedor para la flecha y el título #}
-                <a href="{% url 'cash_register-page' %}" class="me-2" title="Regresar a la lista"> {# Enlace de regreso #}
-                    <i class="fa-solid fa-arrow-left"></i> {# Icono de flecha izquierda (asegúrate de tener Font Awesome cargado) #}
-                </a>
-                <h4 class="card-title mb-0">Detalle Caja</h4>
-            </div>
-            <div class="text-end">
-                <div>Cajero: <b>{{ cash_register.user.username }}</b></div>
-                <div>Fecha Apertura: {{ cash_register.opening_date|date:"d/m/Y H:i:s" }}</div>
-                <div>Estado: <b>{% if cash_register.close_date %}Cerrado{% else %}Abierto{% endif %}</b></div>
-            </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <a href="{% url 'cash_register-page' %}" class="me-2" title="Regresar a la lista">
+            <i class="fa-solid fa-arrow-left"></i>
+          </a>
+          <h4 class="card-title mb-0">Detalle Caja</h4>
         </div>
+        <div class="text-end">
+          <div>Cajero: <b>{{ cash_register.user.username }}</b></div>
+          <div>Fecha Apertura: {{ cash_register.opening_date|date:"d/m/Y H:i:s" }}</div>
+          <div>Estado: <b>{% if cash_register.close_date %}Cerrado{% else %}Abierto{% endif %}</b></div>
+        </div>
+      </div>
     </div>
-</div>
-<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+  </div>
+  
+  <!-- Único contenedor con NavTabs -->
+  <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
-        <div class="d-flex justify-content-between align-items-center">
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" id="cashTabs" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" id="tab-expenses" data-toggle="tab" href="#pane-expenses" role="tab" aria-controls="pane-expenses" aria-selected="true">
+            Gastos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="tab-sales" data-toggle="tab" href="#pane-sales" role="tab" aria-controls="pane-sales" aria-selected="false">
+            Ventas
+          </a>
+        </li>
+      </ul>
+      <!-- Tab panes -->
+      <div class="tab-content" id="cashTabsContent">
+        <!-- PANE 1: Gastos -->
+        <div class="tab-pane fade show active p-3" id="pane-expenses" role="tabpanel" aria-labelledby="tab-expenses">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <h4 class="card-title">Gastos</h4>
-            <div class="text-start">
-                <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new"  data-id="{{ cash_register.pk }}" ><i class="mdi mdi-plus"></i><span> Agregar nuevo</span></button>
-            </div>
-        </div>
-        <div class="table-responsive">
+            <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new" data-id="{{ cash_register.pk }}">
+              <i class="mdi mdi-plus"></i><span> Agregar nuevo</span>
+            </button>
+          </div>
+          <div class="table-responsive">
             <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th>Descripción</th>
-                        <th>Monto</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for expense in expenses %}
-                    <tr>
-                        <td>{{ expense.description }}</td>
-                        <td>{{ expense.amount }}</td>
-                        <td>{{ expense.expense_date|date:"d/m/Y H:i:s" }}</td>
-                        <td class="px-2 py-1 text-center">
-                            <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ expense.pk }}" title="Delete">
-                                <i class="material-icons mdc-button__icon">deleteoutline</i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center">No hay gastos registrados para esta caja.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+              <thead>
+                <tr>
+                  <th>Descripción</th>
+                  <th>Monto</th>
+                  <th>Fecha</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for expense in expenses %}
+                <tr>
+                  <td>{{ expense.description }}</td>
+                  <td>{{ expense.amount }}</td>
+                  <td>{{ expense.expense_date|date:"d/m/Y H:i:s" }}</td>
+                  <td class="px-2 py-1 text-center">
+                    <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data"
+                            type="button"
+                            data-id="{{ expense.pk }}"
+                            title="Delete">
+                      <i class="material-icons mdc-button__icon">deleteoutline</i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center">No hay gastos registrados para esta caja.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
             </table>
+          </div>
         </div>
-    </div>
-</div>
-<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
-    <div class="mdc-card">
-        <div class="card-title">
-            <h4>Ventas de la Caja</h4>
-        </div>
-        <div class="table-responsive">
+        <!-- PANE 2: Ventas -->
+        <div class="tab-pane fade p-3" id="pane-sales" role="tabpanel" aria-labelledby="tab-sales">
+          <h4 class="card-title mb-2">Ventas de la Caja</h4>
+          <div class="table-responsive">
             <table class="table table-striped table-bordered">
-                <thead>
-                    <tr>
-                        <th>Código de Venta</th>
-                        <th>Sub Total</th>
-                        <th>Total</th>
-                        <th>Fecha de Venta</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sale in sales %}
-                    <tr>
-                        <td>{{ sale.code }}</td>
-                        <td>{{ sale.sub_total }}</td>
-                        <td>{{ sale.grand_total }}</td>
-                        <td>{{ sale.date_added|date:"d/m/Y H:i:s" }}</td>
-                        
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center">No hay ventas registradas para esta caja.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+              <thead>
+                <tr>
+                  <th>Código de Venta</th>
+                  <th>Sub Total</th>
+                  <th>Total</th>
+                  <th>Fecha de Venta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for sale in sales %}
+                <tr>
+                  <td>{{ sale.code }}</td>
+                  <td>{{ sale.sub_total }}</td>
+                  <td>{{ sale.grand_total }}</td>
+                  <td>{{ sale.date_added|date:"d/m/Y H:i:s" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center">No hay ventas registradas para esta caja.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
             </table>
+          </div>
         </div>
+      </div>
     </div>
-</div>
+  </div>
 {% endblock pageContent %} {% block ScriptBlock %}
 <script>
     $(function() {
@@ -99,6 +121,10 @@
         $('.delete-data').click(function() {
             _conf("¿Esta seguro de borrar este gasto?", "delete_payment", [$(this).attr('data-id')])
         })    
+        $('#cashTabs a').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
     })
 
     function delete_payment($id) {

@@ -274,19 +274,28 @@ def cash_register(request):
 
 @login_required
 def cash_register_detail(request, pk):
-
     cash_register = get_object_or_404(CashRegister, pk=pk)
-
     expenses = cash_register.expenses.all()
-
     cash_register_sales = CashRegisterSales.objects.filter(cash_register=cash_register)
-    sales = [crs.sale for crs in cash_register_sales] # Extract the Sales objects.
+    sales = [crs.sale for crs in cash_register_sales]
+    expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
+    # suma de ingresos (grand_total de cada venta)
+    income_total = sum(s.grand_total for s in sales)
+
+    # monto inicial (asumo que lo guardas en un campo llamado initial_amount)
+    initial = cash_register.opening_amount or 0
+
+    # monto final = inicial + ingresos – gastos
+    final_total = initial + income_total - expense_total
 
     context = {
-        'page_title': 'Detalle Caja',
         'cash_register': cash_register,
         'expenses': expenses,
-        'sales': sales,  # Add the sales data to the context
+        'sales': sales,
+        'initial': initial,
+        'income_total': income_total,
+        'expense_total': expense_total,
+        'final_total': final_total,
     }
     return render(request, 'posApp/cashRegister/cash_register_detail.html', context)
 

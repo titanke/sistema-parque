@@ -1,24 +1,35 @@
 <div class="container-fluid">
-    <form action="" id="cash_register-form">
-        <input type="hidden" name="id" value="{% if cash_register.pk %}{{cash_register.pk}}{% endif %}">
-        <div class="form-group mb-3">
-            <label for="opening_amount" class="control-label">Monto de Apertura</label>
-            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
-        </div>
-        <div class="form-group mb-3">
-            <label for="opening_amount" class="control-label">Ingreso Total</label>
-            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
-        </div>
-        <div class="form-group mb-3">
-            <label for="opening_amount" class="control-label">Gasto Total</label>
-            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
-        </div>
-        <div class="form-group mb-3">
-            <label for="opening_amount" class="control-label">Monto Final</label>
-            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
-        </div>
+    <!-- Formulario oculto solo para enviar datos -->
+    <form id="cash_register-form" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ cash_register.pk }}">
+        <input type="hidden" name="opening_amount" value="{{ initial }}">
+        <!-- Agrega aquí otros campos ocultos si lo necesitas -->
     </form>
+
+    <!-- Visualización informativa -->
+    <div class="row mb-2">
+        <div class="col-sm-6 text-start">Monto de Apertura:</div>
+        <div class="col-sm-6 text-end">S/. {{ initial|floatformat:2 }}</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-sm-6 text-start">Ingreso Total:</div>
+        <div class="col-sm-6 text-end">S/. {{ income_total|floatformat:2 }}</div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-sm-6 text-start">Gasto Total:</div>
+        <div class="col-sm-6 text-end">S/. {{ expense_total|floatformat:2 }}</div>
+    </div>
+
+    <hr class="my-3">
+
+    <div class="row mb-2">
+        <div class="col-sm-6 text-start">Monto Final:</div>
+        <div class="col-sm-6 text-end fw-bold text-success">S/. {{ final_total|floatformat:2 }}</div>
+    </div>
 </div>
+
+
 <script>
     $(function() {
         $('#cash_register-form').submit(function(e) {

@@ -380,6 +380,11 @@ def delete_cash_register(request):
 @login_required
 def close_cash_register_modal(request):
     cash_register = {}
+    initial = {}
+    expense_total = {}
+    income_total = {}
+    final_total = {}
+
     if request.method == 'GET':
         data = request.GET
         id = ''
@@ -387,9 +392,26 @@ def close_cash_register_modal(request):
             id = data['id']
         if id.isnumeric() and int(id) > 0:
             cash_register = CashRegister.objects.filter(id=id).first()
+            expenses = cash_register.expenses.all()
+            cash_register_sales = CashRegisterSales.objects.filter(cash_register=cash_register)
+            sales = [crs.sale for crs in cash_register_sales]
+            expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
+            # suma de ingresos (grand_total de cada venta)
+            income_total = sum(s.grand_total for s in sales)
+
+            # monto inicial (asumo que lo guardas en un campo llamado initial_amount)
+            initial = cash_register.opening_amount or 0
+
+            # monto final = inicial + ingresos – gastos
+            final_total = initial + income_total - expense_total
+
 
     context = {
         'cash_register': cash_register,
+        'initial': initial,
+        'income_total': income_total,
+        'expense_total': expense_total,
+        'final_total': final_total,
     }
     return render(request, 'posApp/cashRegister/close_cash_register.html', context)
 

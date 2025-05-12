@@ -17,6 +17,43 @@
       </div>
     </div>
   </div>
+
+  <!-- Resumen de Caja -->
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+    <div class="mdc-card p-3">
+      <h5 class="mb-3">Resumen de Caja</h5>
+      <div class="row g-3">
+        <!-- Monto Inicial -->
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100">
+            <small class="text-muted">Monto Inicial</small>
+            <div class="h5 mb-0">S/ {{ initial|floatformat:2 }}</div>
+          </div>
+        </div>
+        <!-- Ingresos -->
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 text-success">
+            <small class="text-muted">Ingresos</small>
+            <div class="h5 mb-0">S/ {{ income_total|floatformat:2 }}</div>
+          </div>
+        </div>
+        <!-- Gastos -->
+        <div class="col-md-3">
+          <div class="border rounded p-3 h-100 text-danger">
+            <small class="text-muted">Gastos</small>
+            <div class="h5 mb-0">S/ {{ expense_total|floatformat:2 }}</div>
+          </div>
+        </div>
+        <!-- Monto Final -->
+        <div class="col-md-3">
+          <div class="bg-primary text-white rounded p-3 h-100">
+            <small class="text-light">Monto Final</small>
+            <div class="h5 mb-0">S/ {{ final_total|floatformat:2 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- Único contenedor con NavTabs -->
   <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
@@ -111,6 +148,7 @@
       </div>
     </div>
   </div>
+
 {% endblock pageContent %} {% block ScriptBlock %}
 <script>
     $(function() {

@@ -300,7 +300,7 @@
                 const $optionalFields = $('#optional-fields');
                 const $inputs = $optionalFields.find('input, select, textarea');
         
-                if (!selectedText || selectedText === 'TICKET') {
+                if (!selectedText || selectedText === 'TICKET' || selectedText === 'ATRACCIÓN') {
                     $optionalFields.hide();
                     $inputs.each(function () {
                         $(this).removeAttr('required');

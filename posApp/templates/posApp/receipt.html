@@ -38,6 +38,7 @@
             display: flex !important;
         }
     }
+
     #outprint {
         width: 80mm;
         max-width: 80mm;
@@ -46,7 +47,14 @@
         background: white;
         color: black;
     }
-    
+
+    .mini-ticket {
+        border: 1px dashed black;
+        padding: 5px;
+        margin: 5px 0;
+        text-align: center;
+        font-size: 10px;
+    }
 </style>
 
 <div class="container-fluid">
@@ -79,12 +87,12 @@
             {% for item in salesItems %}
             <div class="d-flex w-100 align-items-end">
                 <div class="col-1 text-center fw-bold">{{ item.qty|intcomma|floatformat:0 }}</div>
-                <div class="fw-bold text-center">  
+                <div class="fw-bold text-center">
                     <small>{{ item.qty }}</small><br>
                 </div>
-                <div class="col-8 fw-bold text-center">  
+                <div class="col-8 fw-bold text-center">
                     <div class="lh-6">
-                        <small>{{ item.product_id }} {% if item.feature_id %}{{ item.feature_id.color }}{% endif %} {% if item.feature_id %}{{ item.feature_id.size }}{% endif %}</small><br>
+                        <small>{{ item.product_id.name }} {% if item.feature_id %}{{ item.feature_id.color }}{% endif %} {% if item.feature_id %}{{ item.feature_id.size }}{% endif %}</small><br>
                     </div>
                 </div>
                 <div class="col-2 text-end fw-bold">{{ item.total|floatformat:2 }}</div>
@@ -119,6 +127,25 @@
                 <div class="col-6 text-end fw-bold">{{ transaction.amount_change|intcomma }}</div>
             </div>
         </div>
+
+        <hr>
+
+        <!-- MINI TICKETS PARA ATRACCIONES -->
+        <div>
+            {% for item in salesItems %}
+            {% if item.product_id.category_id.name == "ATRACCIÓN" %}
+                {% for i in "x"|ljust:item.qty %}
+                    <div class="mini-ticket">
+                        <strong>{{ item.product_id.name }}</strong><br>
+                        <small>Precio: S/. {{ item.price|floatformat:2 }}</small><br>
+                        <small>Ticket N° {{ forloop.counter }}</small>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+        
+        </div>
+
     </div>
     <hr>
     <div class="clear-fix py-3"></div>
@@ -127,76 +154,16 @@
         <button class="btn btn-secondary bg-gradient border rounded-0 btn-sm" type="button" data-bs-dismiss="modal"><i class="mdi mdi-close"></i> Cerrar</button>
     </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <script>
-    /*
-    $(function() {
-        $('#receipt_print').click(function() {
-            var head = $('head').clone();
-            var p = $('#outprint').clone();
-            var el = $("<div>");
-            head.append(`
-                <style>
-                    @media print {
-                        body {
-                            margin: 0;
-                            padding: 0;
-                        }
-                        #outprint {
-                            width: 80mm;
-                            max-width: 80mm;
-                            padding: 5mm;
-                            font-size: 11px;
-                        }
-                        .modal-footer,
-                        .btn,
-                        #receipt_print {
-                            display: none !important;
-                        }
-                        html, body {
-                            background: none !important;
-                            -webkit-print-color-adjust: exact;
-                            print-color-adjust: exact;
-                        }
-                        hr {
-                            margin: 4px 0;
-                            border-top: 1px dashed #000;
-                        }
-                        .d-flex {
-                            display: flex !important;
-                        }
-                    }
-                </style>
-            `);
-            el.append(head);
-            el.find('title').text("Receipt - Print View");
-            el.append(p);
-            start_loader();
-            var nw = window.open('', '_blank', "width=800,height=800,left=300, top=200");
-            nw.document.write(el.html());
-            nw.document.close();
-            setTimeout(() => {
-                nw.print();
-                setTimeout(() => {
-                    nw.close();
-                    end_loader();
-                }, 250);
-            }, 300);
-        });
-    });*/
-
     $(function () {
         $('#receipt_print').click(function () {
-            console.log('🖨️ Botón de imprimir presionado');
-
             const element = document.getElementById('outprint');
             if (!element) {
                 console.error('❌ Elemento #outprint no encontrado');
                 return;
             }
-
-            console.log('✅ Elemento #outprint encontrado, iniciando generación de PDF');
 
             const opt = {
                 margin: 0,
@@ -205,33 +172,23 @@
                 html2canvas: { scale: 2 },
                 jsPDF: {
                     unit: 'mm',
-                    format: [80, 297],  // Altura fija como A4 vertical
+                    format: [80, 297],
                     orientation: 'portrait'
                 }
             };
 
             html2pdf().set(opt).from(element).output('blob').then(function (pdfBlob) {
-                console.log('✅ PDF generado correctamente como Blob');
-
                 const blobUrl = URL.createObjectURL(pdfBlob);
-                console.log('📄 URL del Blob creado:', blobUrl);
-
-                // Abrir en nueva pestaña
                 window.open(blobUrl, '_blank');
-
-                // Descargar
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = 'ticket.pdf';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-
-                console.log('⬇️ PDF descargado automáticamente como ticket.pdf');
             }).catch(function (error) {
                 console.error('❌ Error al generar el PDF:', error);
             });
         });
     });
-    
 </script>

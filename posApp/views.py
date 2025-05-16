@@ -1086,7 +1086,7 @@ def receipt(request):
     ItemList = salesItems.objects.filter(sale_id = sales).all()
     context = {
         "transaction" : transaction,
-        "salesItems" : ItemList
+        "salesItems" : ItemList,
     }
 
     return render(request, 'posApp/receipt.html',context)

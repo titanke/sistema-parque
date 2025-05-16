@@ -361,7 +361,6 @@ function generate_qr(product_id) {
         },
         success: function(resp) {
             if (typeof resp == 'object' && resp.status == 'success') {
-                // Aquí puedes mostrar el código QR en un modal
                 $('#qrModal img').attr('src', resp.qr_url);
                 $('#qrModal').modal('show');
             } else {
@@ -376,7 +375,6 @@ $('.foto').click(function() {
   var productId = $(this).attr('data-id');
   productId = productId.replace(/%/g, ' ');
   $('#a').attr('src', productId);
-  // Mostrar el modal
   $('#fotoModal').modal('show');
 });
 

@@ -332,11 +332,15 @@ def save_cash_register(request):
                 return HttpResponse(json.dumps(resp), content_type="application/json")
 
         if (data['id']).isnumeric() and int(data['id']) > 0:
-            # Editar una caja registradora existente
             try:
                 cash_reg = CashRegister.objects.get(id=int(data['id']))
                 cash_reg.opening_amount = data['opening_amount']
-                cash_reg.user = user  # Asigna el usuario seleccionado
+                cash_reg.user = user
+
+                # Si se marcó el switch para reabrir
+                if data.get('reopen_register') == '1':
+                    cash_reg.close_date = None  # Reabrir la caja
+
                 cash_reg.save()
                 resp['status'] = 'success'
                 messages.success(request, 'Caja registradora actualizada correctamente.')
@@ -344,10 +348,10 @@ def save_cash_register(request):
                 resp['status'] = 'failed'
                 messages.error(request, 'La caja registradora especificada no existe.')
         else:
-            # Crear una nueva caja registradora
+            # Crear nueva caja
             cash_reg = CashRegister(
                 opening_amount=data['opening_amount'],
-                user=user,  # Asigna el usuario seleccionado
+                user=user
             )
             cash_reg.save()
             resp['status'] = 'success'
@@ -660,7 +664,7 @@ def products(request):
         'category_filter': category_filter,  # Pasar el filtro de categoría
         'categories': Category.objects.all(),  # Si necesitas las categorías para el select
     }
-    return render(request, 'posApp/products.html', context)
+    return render(request, 'posApp/products/products.html', context)
 
 @login_required
 def manage_products(request):
@@ -687,10 +691,7 @@ def manage_products(request):
         'colors': colors,
         'sizes': sizes,
     }
-    return render(request, 'posApp/manage_product.html', context)
-
-
-
+    return render(request, 'posApp/products/manage_product.html', context)
 
 def test(request):
     categories = Category.objects.all()
@@ -862,7 +863,11 @@ def delete_product(request):
 @login_required
 def pos(request):
     products = Products.objects.filter(status=1)
-    cash_register = CashRegister.objects.all()
+    cash_register = CashRegister.objects.filter(close_date__isnull=True)
+    payment = PaymentType.objects.all()
+
+    mostrar_modal = not cash_register.exists()  # True si no hay caja abierta
+
     product_json = []
     for product in products:
         features = product.features.all()
@@ -886,8 +891,10 @@ def pos(request):
     context = {
         'page_title': "Punto de venta",
         'products': products,
+        'payment': payment,
         'cash_registers': cash_register,
-        'product_json': json.dumps(product_json)
+        'product_json': json.dumps(product_json),
+        'mostrar_modal': mostrar_modal
     }
     return render(request, 'posApp/pos/pos.html', context)
 
@@ -920,22 +927,18 @@ def save_pos(request):
         if len(check) <= 0:
             break
     code = str(pref) + str(code)
-    grand_totalv = data.get('grand_total', '0')  # Obtén el valor o usa '0' como predeterminado
+    grand_totalv = data.get('grand_total', '0')  
     try:
-        grand_totalv = float(grand_totalv.replace(',', '').strip())  # Elimina comas y espacios
+        grand_totalv = float(grand_totalv.replace(',', '').strip())  
     except ValueError:
-        grand_totalv = 0.0  # Maneja el caso de un valor no convertible
-
-
+        grand_totalv = 0.0  
     try:
         sales = Sales(code=code, sub_total=data['sub_total'], payment_type_id=payment, descuento=data['descuento'], tax=data['tax'],
                       tax_amount=data['tax_amount'], grand_total=grand_totalv, tendered_amount=data['tendered_amount'],
                       amount_change=data['amount_change']).save()
         sale_id = Sales.objects.last().pk
-        
-        
-        # Get the cash register
-        cash_register_id = data.get('cash_register_id')  # Get the cash register ID from the request
+                
+        cash_register_id = data.get('cash_register_id')  
         cash_register = CashRegister.objects.filter(id=cash_register_id).first() if cash_register_id else None
         
         i = 0
@@ -947,28 +950,24 @@ def save_pos(request):
             price = data.getlist('price[]')[i]
             total = float(qty) * float(price)
 
-            # Update product stock
-             # Ensure qty is converted to integer for subtraction
-            product.stock -= int(qty) 
-            product.save()  # Save the updated stock
-            
-                # Verificar si hay un feature seleccionado para este producto
+            if product.category_id.name.upper() != 'TICKET':
+                product.stock -= int(qty)
+                product.save()
+
             feature_id = data.getlist('feature_id[]')[i] if 'feature_id[]' in data else None
-            feature = None  # Inicializar el feature como None por defecto
+            feature = None  
 
             if feature_id:
                 feature = ProductFeature.objects.filter(id=feature_id).first()
                 if feature:
                     feature.stock -= int(qty) 
-                    feature.save()  # Guardar el stock actualizado en el feature
+                    feature.save() 
 
-            # Registrar el ítem en la venta
             print({'sale_id': sale, 'product_id': product, 'feature_id': feature, 'qty': qty, 'price': price, 'total': total})
                     
             salesItems(sale_id=sale, product_id=product, feature_id=feature, qty=qty, price=price, total=total).save()
             i += 1
             
-        # Create the CashRegisterSales entry
         if cash_register:
             CashRegisterSales.objects.create(cash_register=cash_register, sale=sale)
     
@@ -1095,6 +1094,8 @@ def receipt(request):
 
 
 
+
+
 @login_required
 def delete_sale(request):
     resp = {'status': 'failed', 'msg': ''}
@@ -1106,19 +1107,19 @@ def delete_sale(request):
             sale_items = salesItems.objects.filter(sale_id=id)
             
             for item in sale_items:
-                # Restaurar el stock del producto
                 product = item.product_id
-                product.stock += item.qty
+                if product.category_id.name.upper() != 'TICKET':
+                    product.stock += item.qty
+
+                    if product.status == 0 and product.stock > 0:
+                        product.status = 1  
+                    product.save()
                 
-                if product.status == 0 and product.stock > 0:
-                    product.status = 1  
-                product.save()
-                
-                # Restaurar el stock del feature si aplica
-                if item.feature_id:
-                    feature = item.feature_id
-                    feature.stock += item.qty
-                    feature.save()
+                    # Restaurar el stock del feature si aplica
+                    if item.feature_id:
+                        feature = item.feature_id
+                        feature.stock += item.qty
+                        feature.save()
         
         # Eliminar la venta y los items asociados
         Sales.objects.filter(id=id).delete()

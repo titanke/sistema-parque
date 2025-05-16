@@ -5,6 +5,16 @@
             <label for="opening_amount" class="control-label">Monto de Apertura</label>
             <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
         </div>
+        {% if cash_register.close_date %}
+            <div class="form-group mb-3">
+                <label for="reopen_register" class="form-label">Reabrir Caja</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="reopen_register" name="reopen_register" value="1">
+                    <label class="form-check-label" for="reopen_register">Activar para reabrir la caja cerrada</label>
+                </div>
+            </div>
+        {% endif %}
+
         <div class="form-group mb-3">
             <label for="user_id" class="control-label">Usuario</label>
             <select name="user_id" id="user_id" class="form-select form-select-sm rounded-0" required>

@@ -70,12 +70,14 @@
                                     onclick="window.location.href='{% url 'cash_register_detail-page' cat.pk %}'">
                                 <i class="fa-solid fa-gear"></i>
                             </button>
-                            <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--warning mdc-ripple-upgraded close-cash-register-button"
-                                    type="button"
-                                    data-id="{{ cat.pk }}" 
-                                    title="Cerrar Caja">
-                                <i class="fa-solid fa-times-circle"></i> 
-                            </button>
+                            {% if not cat.close_date %}
+                                <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--warning mdc-ripple-upgraded close-cash-register-button"
+                                        type="button"
+                                        data-id="{{ cat.pk }}" 
+                                        title="Cerrar Caja">
+                                    <i class="fa-solid fa-times-circle"></i> 
+                                </button>
+                            {% endif %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ cat.pk }}" title="Delete">
                                 <i class="material-icons mdc-button__icon">deleteoutline</i>
                             </button>

@@ -1,6 +1,10 @@
 
 <div class="container-fluid">
-      
+    <style>
+        #optional-fields {
+            display: none;
+        }
+    </style>
     <form action="" id="product-form">
         <input type="hidden" name="id" value="{% if product.pk %}{{product.pk}}{% endif %}">
         <input type="hidden" name="deleted_features" id="deleted-features" value="">
@@ -29,60 +33,62 @@
                 <label for="name" class="control-label">Nombre del producto</label>
                 <input  name="name" id="name" class="form-control form-control-sm rounded-0" value="{% if product.name %}{{product.name}}{% endif %}" required>
             </div>
-            <div class="form-group mb-3">
-                <label for="description" class="control-label">Descripcion</label>
-                <input type="text" name="description" id="description" class="form-control form-control-sm rounded-0" value="{% if product.description %}{{product.description}}{% endif %}" required>
-            </div>
-            <div class="form-group mb-3">
-                <label for="image" class="control-label">Imagen del Producto</label>
-                <input type="file" name="image" id="image" accept="image/*" class="form-control form-control-sm rounded-0">
-            </div>
-            <div class="form-group mb-3">
-                <label for="stock" class="control-label">Stock</label>
-                <input type="text" name="stock" id="stock" class="form-control form-control-sm rounded-0" value="{% if product.stock %}{{product.stock}}{% endif %}" required>
-            </div>
-          
-               <!-- Campo para características -->
-            <div class="form-group mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="control-label me-2">Características</label>
-                    <button type="button" id="add-feature" class="btn btn-success btn-sm"><i class="mdi mdi-plus"></i>Agregar característica</button>
+            <div id="optional-fields" style="display: none;">
+                <div class="form-group mb-3" id="description-group">
+                    <label for="description" class="control-label">Descripción</label>
+                    <input type="text" name="description" id="description" class="form-control form-control-sm rounded-0"
+                           value="{% if product.description %}{{ product.description }}{% endif %}" required>
                 </div>
-                <div id="features-container">
-                    {% for feature in features %}
-                    <div class="feature-row d-flex align-items-center mb-2" data-feature-id="{{ feature.id }}">
-                        <select name="feature_color[]" class="form-select me-2" required>
-                            {% for color in colors %}
-                            <option value="{{ color.id }}" {% if feature.color.id == color.id %}selected{% endif %}>
-                                {{ color.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <select name="feature_size[]" class="form-select me-2" required>
-                            {% for size in sizes %}
-                            <option value="{{ size.id }}" {% if feature.size.id == size.id %}selected{% endif %}>
-                                {{ size.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="feature_stock[]" class="form-control me-2" value="{{ feature.stock }}" min="0" required>
-                        <button type="button" class="btn btn-danger btn-remove-feature">Eliminar</button>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
             
+                <div class="form-group mb-3" id="image-group">
+                    <label for="image" class="control-label">Imagen del Producto</label>
+                    <input type="file" name="image" id="image" accept="image/*" class="form-control form-control-sm rounded-0">
+                </div>
 
-            <div class="form-group mb-3">
-                <label for="price" class="control-label">Precio unitario</label>
-                <input type="text" name="price" id="price" class="form-control form-control-sm rounded-0" value="{% if product.price %}{{product.price}}{% endif %}" required>
+                <div class="form-group mb-3">
+                    <label for="stock" class="control-label">Stock</label>
+                    <input type="text" name="stock" id="stock" class="form-control form-control-sm rounded-0" value="{% if product.stock %}{{product.stock}}{% endif %}" required>
+                </div>
+
+                <div class="form-group mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="control-label me-2">Características</label>
+                        <button type="button" id="add-feature" class="btn btn-success btn-sm"><i class="mdi mdi-plus"></i>Agregar característica</button>
+                    </div>
+                    <div id="features-container">
+                        {% for feature in features %}
+                        <div class="feature-row d-flex align-items-center mb-2" data-feature-id="{{ feature.id }}">
+                            <select name="feature_color[]" class="form-select me-2" required>
+                                {% for color in colors %}
+                                <option value="{{ color.id }}" {% if feature.color.id == color.id %}selected{% endif %}>
+                                    {{ color.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <select name="feature_size[]" class="form-select me-2" required>
+                                {% for size in sizes %}
+                                <option value="{{ size.id }}" {% if feature.size.id == size.id %}selected{% endif %}>
+                                    {{ size.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="feature_stock[]" class="form-control me-2" value="{{ feature.stock }}" min="0" required>
+                            <button type="button" class="btn btn-danger btn-remove-feature">Eliminar</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="price" class="control-label">Precio unitario</label>
+                    <input type="text" name="price" id="price" class="form-control form-control-sm rounded-0" value="{% if product.price %}{{product.price}}{% endif %}" required>
+                </div>
+    
             </div>
-
+        
             <div class="form-group mb-3">
-                <label for="p_mayor" class="control-label">Precio mayor</label>
+                <label for="p_mayor" class="control-label"  id="p_mayor-label" >Precio mayor</label>
                 <input type="text" name="p_mayor" id="p_mayor" class="form-control form-control-sm rounded-0" value="{% if product.p_mayor %}{{product.p_mayor}}{% endif %}" required>
             </div>
-
             
             <div class="form-group mb-3">
                 <label for="status" class="control-label">Estado</label>
@@ -109,6 +115,9 @@
     <script>
         var deletedFeatures = [];
         $(document).ready(function () {
+
+
+            
             const featureContainer = $("#features-container"); // Contenedor de características        
             const stockInput = $("#stock"); // Input del stock general
 
@@ -285,9 +294,43 @@
             })
             
         });
+        $(document).ready(function () {
+            function toggleOptionalFields() {
+                const selectedText = $('#category_id option:selected').text().trim().toUpperCase();
+                const $optionalFields = $('#optional-fields');
+                const $inputs = $optionalFields.find('input, select, textarea');
         
-
-
+                if (!selectedText || selectedText === 'TICKET') {
+                    $optionalFields.hide();
+                    $inputs.each(function () {
+                        $(this).removeAttr('required');
+                    });
+                    $('#stock').val('1000');
+                    $('#p_mayor-label').text('Precio');
+        
+                    // Copiar valor en tiempo real
+                    $('#p_mayor').on('input', function () {
+                        $('#price').val($(this).val());
+                    });
+        
+                } else {
+                    $optionalFields.show();
+                    $inputs.each(function () {
+                        $(this).attr('required', true);
+                    });
+                    $('#p_mayor-label').text('Precio mayor');
+        
+                    // Eliminar listener si ya no es TICKET
+                    $('#p_mayor').off('input');
+                }
+            }
+        
+            $('#category_id').on('change', toggleOptionalFields);
+            toggleOptionalFields();
+        });
+        
+        
+        
     </script>
 
 

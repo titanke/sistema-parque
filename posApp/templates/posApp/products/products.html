@@ -10,7 +10,10 @@
                 {% if request.user.is_superuser %}
                     <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new"><i class="mdi mdi-plus"></i><span> Agregar nuevo</span></button>
                 {% endif %}
-                <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="scanQR"><i class="mdi mdi-plus"></i><span> Escanear producto</span></button>
+                <!-- 
+                  <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="scanQR"><i class="mdi mdi-plus"></i><span> Escanear producto</span></button>
+                -->
+
             </div>
 
         </div>
@@ -149,7 +152,13 @@
                       <td class="px-2 py-1 text-start">{{ product.code }} - {{ product.name }}</td>
                       <td class="px-2 py-1 text-start">{{ product.description }}</td>
                       <td class="px-2 py-1 text-start">{{ product.price }}</td>
-                      <td class="px-2 py-1 text-start">{{ product.stock }}</td>
+                      <td class="px-2 py-1 text-start">
+                          {% if product.category_id.name|lower == 'ticket' %}
+                              -
+                          {% else %}
+                              {{ product.stock }}
+                          {% endif %}
+                      </td>
                       <td class="px-2 py-1 text-center">
                         {% if product.status == 1 %}
                         <span class="badge bg-primary rounded-pill px-3">Activo</span> {% else %}
@@ -165,14 +174,15 @@
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ product.pk }}" title="Borrar">
                             <i class="material-icons mdc-button__icon">delete</i>
                         </button>
-
-                 
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--blue mdc-ripple-upgraded foto" type="button" data-id="{{ product.image }}" title="Imagen">
                           <i class="fa-solid fa-image"></i>
                         </button>
+                      <!-- 
+
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--dark mdc-ripple-upgraded generate-qr" type="button" data-id="{{ product.pk }}" title=" QR">
                             <i class="fa-solid fa-qrcode"></i>
                         </button>
+                      -->
                       </td>
                       {% endif %}
                   </tr>
@@ -364,8 +374,6 @@ function generate_qr(product_id) {
 
 $('.foto').click(function() {
   var productId = $(this).attr('data-id');
-  console.log(productId);
-  // Asegurarse de que la URL esté bien formateada
   productId = productId.replace(/%/g, ' ');
   $('#a').attr('src', productId);
   // Mostrar el modal

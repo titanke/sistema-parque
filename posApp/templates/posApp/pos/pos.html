@@ -24,6 +24,49 @@
     </div>
 </div>
 
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-dark">
+        <div class="modal-header">
+          <h5 class="modal-title" id="checkoutModalLabel">Confirmar Venta</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Total a pagar:</strong> <span id="modal_grand_total">0.00</span></p>
+          <p><strong>Entregado:</strong> <span id="modal_tendered_amount">0.00</span></p>
+          <p><strong>Cambio:</strong> <span id="modal_amount_change">0.00</span></p>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="print_ticket" checked>
+            <label class="form-check-label" for="print_ticket">Imprimir ticket</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirm_submit">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade" id="modalCajaCerrada" tabindex="-1" aria-labelledby="modalCajaCerradaLabel" aria-hidden="true"
+  data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modalCajaCerradaLabel">Caja no abierta</h5>
+      </div>
+      <div class="modal-body text-center">
+        Debes abrir una caja para acceder al punto de venta.
+      </div>
+      <div class="modal-footer justify-content-center">
+        <a href="{% url 'cash_register-page' %}" class="btn btn-primary">Ir a abrir caja</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
         <div class="d-flex justify-content-between align-items-center">
@@ -41,118 +84,133 @@
         </div>
     </div>
 </div>
+
+
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
-        <form action="" id="pos-form">
-            <input type="hidden" name="cash_register_id" id="cash_register_id_input">
-            <fieldset>
-                <legend>Agregrar producto</legend>
-                <div class="row align-items-end">
-                    <div class="col-lg-5 col-md-5 col-sm-12">
-                        <div class="form-group mb-3">
-                            <label for="product-id">Seleccionar producto</label>
+      <form action="" id="pos-form" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="cash_register_id" id="cash_register_id_input" value="{{ cash_register.pk }}">
+        <fieldset>
+            <div class="row g-3" id="POS-field">
+                <div class="col-12 col-md-8 items-column p-0">
+                    <div class="row g-3 mb-3 align-items-end">
+                        <div class="col-6 col-sm-6">
+                            <label for="product-id" class="form-label">Seleccionar producto</label>
                             <select id="product-id" class="form-select form-select-sm">
-                                <option value="--" disabled selected></option>
-                                {% for product in products %}
-                                    <option value="{{ product.pk }}" data-stock="{{ product.stock }}">COD: {{ product.code }} - {{ product.name }} STK: {{ product.stock }}</option>
-                                {% endfor %}
+                            <option value="--" disabled selected></option>
+                            {% for product in products %}
+                                <option value="{{ product.pk }}" data-stock="{{ product.stock }}">
+                                COD: {{ product.code }} – {{ product.name }} (stk: {{ product.stock }})
+                                </option>
+                            {% endfor %}
                             </select>
                         </div>
-                        <div class="form-group mb-3 d-none" id="feature-select-container">
-                            <label for="feature-id">Seleccionar característica</label>
-                            <select id="feature-id" class="form-select form-select-sm">
-                                <option value="" disabled selected></option>
-                            </select>
+                        <div class="col-3 col-sm-3">
+                            <label for="product-qty" class="form-label">Cantidad</label>
+                            <input type="number"
+                                    class="form-control form-control-sm text-center"
+                                    step="any"
+                                    id="product-qty"
+                                    value="1">
                         </div>
-                    </div>
-                    <div class="col-lg-3 col-md-5 col-md-12">
-                        <div class="form-group mb-3">
-                            <label for="product-qty">Cantidad</label>
-                            <input type="number" class="form-control form-control-sm text-center" step="any" id="product-qty" value="1">
+                        <div class="col-3 pr-3">
+                            <button class="btn btn-success btn-sm rounded-0 w-100"
+                                    type="button"
+                                    id="add_item">
+                            <i class="mdi mdi-plus"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div class="col-lg-4 col-md-2 col-md-12">
-                        <div class="form-group mb-3">
-                            <button class="btn btn-light btn-sm bg-gradient border rounded-0 text-start" type="button" id="add_item"><i class="mdi mdi-plus"></i> Agregar</button>                            
-                            <button class="btn btn-light btn-sm bg-gradient border rounded-0 text-start" type="button" id="scanQR"><i class="mdi mdi-plus"></i> Escanear QR</button>                        </div>
-                
-                    </div>
-
                 </div>
-            </fieldset>
-            <fieldset>
-                <div class="d-flex w-100" id="POS-field">
-                    <div class="col-8 bg-gradient bg-light border h-100">
-                        <table class="table table-bordered">
-                            <colgroup>
-                                <col width="5%">
-                                <col width="15%">
-                                <col width="40%">
-                                <col width="20%">
-                                <col width="20%">
-                            </colgroup>
-                            <thead>
-                                <tr class="bg-dark bg-gradient bg-opacity-50 text-light">
-                                    <th class="py-1 px-2 text-center  text-light"></th>
-                                    <th class="py-1 px-2 text-center  text-light">Cantidad</th>
-                                    <th class="py-1 px-2 text-center  text-light">Producto</th>
-                                    <th class="py-1 px-2 text-center  text-light">Precio</th>
-                                    <th class="py-1 px-2 text-center  text-light">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-4 bg-gradient bg-dark bg-opacity-50 border h-100">
-                        <div class="col-12 py-1 px-2">
-                                       <dt class="h5 fw-bold text-light">Sub Total</dt>
-                                <dd class="text-end py-0 px-2 rounded-0 bg-light">
-                                    <input type="hidden" name="sub_total" value="0">
-                                    <span class="h4 fw-bold" id="sub_total">0.00</span>
-                                </dd>
-                            <dl>
-                        
-                                <dt class="h5 fw-bold text-light">Descuento</dt>
-                                <dd>
-                                    <input type="number" class="form-control rounded-0 text-end" step="any" min="0" max="100" name="descuento" value="0">
-                                </dd>
-                    
-                                <dt class="h5 fw-bold text-light">Impuestos (%)</dt>
-                                <dd>
-                                    <input type="number" class="form-control rounded-0 text-end" step="any" min="0" max="100" name="tax" value="0">
-                                </dd>
-
-                                <dt class="h5 fw-bold text-light">Cantidad Impuestos </dt>
-                                <dd class="text-end py-0 px-2 rounded-0 bg-light">
-                                    <input type="hidden" name="tax_amount" value="0">
-                                    <span class="h4 fw-bold" id="tax_amount">0.00</span>
-                                </dd>
-
-
-                                <dt class="h5 fw-bold text-light"> Total</dt>
-                                <dd class="text-end py-0 px-2 rounded-0 bg-light">
-                                    <input type="hidden" name="grand_total" value="0">
-                                    <input type="hidden" name="tendered_amount" value="0">
-                                    <input type="hidden" name="payment_type_id" >
-                                    <input type="hidden" name="amount_change" value="0">
-                                    <input type="hidden" name="grand_total" value="0">
-                                    <input type="hidden" name="grand_total" value="0">
-                                    <span class="h4 fw-bold" id="grand_total">0.00</span>
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
-            <div class="row">
-                <div class="col-md-12 text-end">
-                    <button class="btn btn-primary btn-sm rounded-0" type="button" id="check_out"><i class="mdi mdi-save"></i> Registrar</button>
-                </div>
+              <div class="bg-gradient bg-light border h-80 p-2 items-container">
+                <table class="table table-bordered mb-0">
+                  <colgroup>
+                    <col width="5%">
+                    <col width="15%">
+                    <col width="40%">
+                    <col width="20%">
+                    <col width="20%">
+                  </colgroup>
+                  <thead>
+                    <tr class="bg-dark bg-gradient bg-opacity-50 text-light">
+                      <th class="py-1 px-2 text-center"></th>
+                      <th class="py-1 px-2 text-center">Cant.</th>
+                      <th class="py-1 px-2 text-center">Producto</th>
+                      <th class="py-1 px-2 text-center">Precio</th>
+                      <th class="py-1 px-2 text-center">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
             </div>
-        </form>
+            <div class="col-12 col-md-4 summary-column p-0">
+              <div class="summary-panel bg-gradient bg-dark bg-opacity-50 border h-100 p-3 text-light">
+                <div class="d-flex justify-content-between align-items-center ">
+                    <h5 class="mb-0">Resumen de Venta</h5>
+                        <div class="px-3 py-2 rounded text-end">
+                            <input type="hidden" name="sub_total" value="0">
+                            <input type="hidden" class="form-control form-control-sm rounded-0 text-end" step="any" min="0" max="100" name="descuento" value="0">
+                            <input type="hidden" class="form-control form-control-sm rounded-0 text-end" step="any" min="0" max="100" name="tax" value="0">
+    
+                            <input type="hidden" name="tendered_amount" value="0">
+                            <input type="hidden" name="payment_type_id" >
+                            <input type="hidden" name="amount_change" value="0">
+                            <input type="hidden" name="grand_total" value="0">
+                            <input type="hidden" name="tax_amount" value="0">
+                            <span class="h6 mb-0">Total: </span>
+                            <span class="h4 fw-bold" id="grand_total">0.00</span>
+                        </div>
+                  </div>
+
+                  <div class="row mt-3 g-2">
+                    <div class="col-6">
+                      <button class="btn btn-primary btn-sm rounded-0 w-100"
+                              type="button"
+                              id="scanQR">
+                        <i class="mdi mdi-plus"></i> Pago
+                      </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-success btn-sm rounded-0 w-100"
+                                type="button"
+                                id="check_out">
+                          <i class="mdi mdi-check"></i> Finalizar
+                        </button>
+                      </div>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label for="payment_type_id" class="control-label">Tipo de Pago</label>
+                    <select id="payment_type_id" class="form-select form-select-sm rounded-0" required>
+                        <option value=""></option>
+                        {% for pay in payment %}
+                            {% if product.pay_id.name == pay.name %}
+                            {% else %}
+                            <option value="{{ pay.id }}">{{ pay.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label for="tendered_amount" class="control-label"></label>
+                    <input type="number" step="any" id="tendered_amount" class="form-control form-control-lg rounded-0 text-end" value="0" required>
+                  </div>
+                  <div class="form-group mb-3">
+                    <label for="payment_change" class="control-label">Vuelto</label>
+                    <input type="text" id="payment_change" class="form-control form-control-lg rounded-0 text-end" value="{{ 0|floatformat:2 }}" required disabled>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+      </form>
     </div>
-</div>
+  </div>
+
+
+
 <noscript id="item-clone">
     <tr>
         <td class="px-2 py-1 text-center">
@@ -170,6 +228,16 @@
         <td class="px-2 py-1 product_total text-end"></td>
     </tr>
 </noscript> {% endblock pageContent %} {% block ScriptBlock %}
+
+{% if mostrar_modal %}
+<script>
+  $(document).ready(function () {
+    $('#modalCajaCerrada').modal('show');
+  });
+</script>
+{% endif %}
+
+
 <script>
     var product_json = '{{ product_json }}'
     if (product_json == "" || product_json == "{}") {
@@ -456,16 +524,111 @@
         $('[name="tax"], [name="descuento"]').on('input keypress keydown keyup', function() {
         calc();
         })
+        /*
         $('#check_out').click(function() {
             if ($('#POS-field table tbody tr').length <= 0) {
                 alert("Agregue al menos 1 producto primero")
                 return false;
             }
-            uni_modal("Registrar", "{% url 'checkout-modal' %}?grand_total=" + $('[name="grand_total"]').val())
+        
+            var payment_type_id = $('#payment_type_id').val()
+            $('[name="payment_type_id"]').val(payment_type_id)
 
-        })
+            var payment_type_id = $('#amoint').val()
+            if ($('[name="amount_change"]').val() < 0) {
+                alert("El monto ofrecido es menor que el monto a pagar")
+                return false;
+            }
+            //uni_modal("Registrar", "{% url 'checkout-modal' %}?grand_total=" + $('[name="grand_total"]').val())
+
+        })*/
+
+        $('#check_out').on('click', function () {
+            const paymentType = $('#payment_type_id').val();
+            const tendered = parseFloat($('#tendered_amount').val()) || 0;
+            const total = parseFloat($('#grand_total').text()) || 0;
+            const change = tendered - total;
+
+
+            if ($('#POS-field table tbody tr').length <= 0) {
+                alert("Agregue al menos 1 producto primero")
+                return false;
+            }
+    
+            var payment_type_id = $('#payment_type_id').val()
+            $('[name="payment_type_id"]').val(payment_type_id)
+
+            if ($('[name="amount_change"]').val() < 0) {
+                alert("El monto ofrecido es menor que el monto a pagar")
+                return false;
+            }
+            if (!paymentType) {
+              alert("Por favor selecciona un tipo de pago");
+              return;
+            }
+      
+            if (change < 0) {
+              alert("El monto entregado es menor al total a pagar");
+              return;
+            }
+      
+            // Mostrar valores en el modal
+            $('#modal_grand_total').text(total.toFixed(2));
+            $('#modal_tendered_amount').text(tendered.toFixed(2));
+            $('#modal_amount_change').text(change.toFixed(2));
+      
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+            modal.show();
+          });
+      
+          $('#confirm_submit').on('click', function () {
+            // Opcional: usar el estado del switch
+            const printTicket = $('#print_ticket').is(':checked');
+      
+            // Puedes enviar esta info como un input hidden si deseas
+            if (printTicket) {
+              $('<input>').attr({
+                type: 'hidden',
+                name: 'print_ticket',
+                value: '1'
+              }).appendTo('#pos-form');
+            }
+      
+            // Ahora sí: enviar formulario
+            $('#pos-form').submit();
+          });
+
+
+
+        // Calcular Vuelto
+        $(document).ready(function () {
+            function calcularVuelto() {
+              const tendered = parseFloat($('#tendered_amount').val()) || 0;
+              const total = parseFloat($('#grand_total').text()) || 0;
+              const change = tendered - total;
+        
+              $('[name="tendered_amount"]').val(tendered.toFixed(2));
+              $('[name="amount_change"]').val(change.toFixed(2));
+              $('#payment_change').val(change.toFixed(2));
+            }
+        
+            $('#tendered_amount').on('input', calcularVuelto);
+
+        });
+
+
         $('#pos-form').submit(function(e) {
             e.preventDefault();
+
+            const tendered = parseFloat($('#tendered_amount').val()) || 0;
+            const total = parseFloat($('#grand_total').text()) || 0;
+            const change = tendered - total;
+            if (change < 0) {
+                alert("El monto entregado es menor al total a pagar");
+                return false;
+              }
+
             var _this = $(this)
             $('.err-msg').remove();
             var el = $('<div>')

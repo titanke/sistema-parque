@@ -133,7 +133,7 @@ def color(request):
     }
     return render(request, 'posApp/color.html',context)
 
-
+@login_required
 def manage_color(request):
     color = {}
     if request.method == 'GET':
@@ -539,7 +539,6 @@ def size(request):
     return render(request, 'posApp/size.html',context)
 
 @login_required
-
 def manage_size(request):
     size = {}
     if request.method == 'GET':
@@ -631,8 +630,9 @@ def delete_category(request):
 
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
-# Products
 
+# Products
+@login_required
 def products(request):
     # Obtener el filtro de búsqueda y categoría
     search = request.GET.get('search', '')
@@ -816,6 +816,7 @@ def save_product(request):
 
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
+@login_required
 def upload_file(request):
     media_path = os.path.join(settings.MEDIA_ROOT)
     selected_directory = request.POST.get('directory', '') 
@@ -912,7 +913,7 @@ def checkout_modal(request):
     }
     return render(request, 'posApp/pos/checkout.html',context)
 
-
+@login_required
 def save_pos(request):
     resp = {'status': 'failed', 'msg': ''}
     data = request.POST
@@ -1052,7 +1053,7 @@ def clean_get_params(params):
             clean[key] = value[0]  # solo tomamos el primer valor
     return clean
 
-
+@login_required
 def salesList(request):
     search_query = request.GET.get('search', '')
     date_from = request.GET.get('date_from') or datetime.now().date().strftime('%Y-%m-%d')

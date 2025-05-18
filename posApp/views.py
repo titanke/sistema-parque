@@ -265,7 +265,10 @@ def delete_payment(request):
 def cash_register(request):
     search = request.GET.get('search', '')
 
-    color_list = CashRegister.objects.all()
+    if request.user.is_superuser:
+        color_list = CashRegister.objects.all()
+    else:
+        color_list = CashRegister.objects.filter(user=request.user)
     # category_list = {}
     context = {
         'page_title':'Lista de Cajas',
@@ -303,7 +306,10 @@ def cash_register_detail(request, pk):
 @login_required
 def manage_cash_register(request):
     cash_register = {}
-    users = User.objects.all().order_by('username') 
+    if request.user.is_superuser:
+        users = User.objects.all()
+    else:
+        users = User.objects.filter(id=request.user.id)
     if request.method == 'GET':
         data = request.GET
         id = ''
@@ -865,7 +871,10 @@ def delete_product(request):
 @login_required
 def pos(request):
     products = Products.objects.filter(status=1)
-    cash_register = CashRegister.objects.filter(close_date__isnull=True)
+    if request.user.is_superuser:
+        cash_register = CashRegister.objects.filter(close_date__isnull=True)
+    else:
+        cash_register = CashRegister.objects.filter(close_date__isnull=True, user=request.user)
     payment = PaymentType.objects.all()
 
     mostrar_modal = not cash_register.exists()  # True si no hay caja abierta
@@ -1087,8 +1096,14 @@ def salesList(request):
     if user_id:
         sales = sales.filter(cashregistersales__cash_register__user_id=user_id)
 
+    # Filtrar ventas según el usuario
+    if request.user.is_superuser:
+        filtered_sales = sales.distinct().order_by('-id')  # Todas las ventas, ordenadas por ID descendente
+    else:
+        filtered_sales = sales.filter(cashregister__user=request.user).distinct().order_by('-id')
+
     sale_data = []
-    for sale in sales.distinct():
+    for sale in filtered_sales:
         data = {}
 
         for field in sale._meta.get_fields(include_parents=False):
@@ -1106,16 +1121,13 @@ def salesList(request):
         # Items
         data['items'] = salesItems.objects.filter(sale_id=sale).all()
         data['item_count'] = len(data['items'])
-        
+
+        # Caja relacionada
         cash_register_sale = sale.cashregistersales_set.first()
         if cash_register_sale:
-            if cash_register_sale.cash_register.user:
-                data['username'] = cash_register_sale.cash_register.user.username
-            else:
-                data['username'] = "—"
-
-            # Agregar la fecha de apertura de la caja
-            data['opening_date'] = cash_register_sale.cash_register.opening_date
+            cash_register = cash_register_sale.cash_register
+            data['username'] = cash_register.user.username if cash_register.user else "—"
+            data['opening_date'] = cash_register.opening_date
         else:
             data['username'] = "—"
             data['opening_date'] = "—"

@@ -61,14 +61,16 @@
                             {% endif %}
                         </td>                 
                         <td class="px-2 py-1 text-center">
+                            {% if request.user.is_superuser %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ cat.pk }}" title="Edit">
                                 <i class="material-icons mdc-button__icon">edit</i>
                             </button>
+                            {% endif %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--dark mdc-ripple-upgraded generate-qr"
                                     type="button"
                                     data-id="{{ cat.pk }}"
                                     onclick="window.location.href='{% url 'cash_register_detail-page' cat.pk %}'">
-                                <i class="fa-solid fa-gear"></i>
+                                <i class="fa-solid fa-eye"></i>
                             </button>
                             {% if not cat.close_date %}
                                 <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--warning mdc-ripple-upgraded close-cash-register-button"
@@ -78,9 +80,12 @@
                                     <i class="fa-solid fa-times-circle"></i> 
                                 </button>
                             {% endif %}
+                            {% if request.user.is_superuser %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ cat.pk }}" title="Delete">
                                 <i class="material-icons mdc-button__icon">deleteoutline</i>
                             </button>
+                            {% endif %}
+
                         </td>
                     </tr>
                     {% endfor %}

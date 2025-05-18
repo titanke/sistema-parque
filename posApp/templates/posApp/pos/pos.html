@@ -1,5 +1,18 @@
 {% extends "posApp/base.html" %} {% block pageContent %}
 
+<style>
+
+  .mdc-card {
+    height: auto !important;
+    min-height: 100%;
+    overflow: visible;
+  }
+  #pos-form {
+    height: auto;
+  }
+  
+</style>
+
 
 <audio id="beep" src="https://bigsoundbank.com/UPLOAD/wav/1417.wav" preload="auto"></audio>
 
@@ -88,68 +101,71 @@
 
 
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
-    <div class="mdc-card">
-      <form action="" id="pos-form" method="POST">
+  <div class="mdc-card" >
+    <form action="" id="pos-form" method="POST">
         {% csrf_token %}
         <input type="hidden" name="cash_register_id" id="cash_register_id_input" value="{{ cash_register.pk }}">
         <fieldset>
             <div class="row g-3" id="POS-field">
                 <div class="col-12 col-md-8 items-column p-0">
-                    <div class="row g-3 mb-3 align-items-end">
-                        <div class="col-6 col-sm-6">
-                            <label for="product-id" class="form-label">Seleccionar producto</label>
-                            <select id="product-id" class="form-select form-select-sm">
-                            <option value="--" disabled selected></option>
-                            {% for product in products %}
-                                <option value="{{ product.pk }}" data-stock="{{ product.stock }}">
-                                COD: {{ product.code }} – {{ product.name }} (stk: {{ product.stock }})
-                                </option>
-                            {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-3 col-sm-3">
-                            <label for="product-qty" class="form-label">Cantidad</label>
-                            <input type="number"
-                                    class="form-control form-control-sm text-center"
-                                    step="any"
-                                    id="product-qty"
-                                    value="1">
-                        </div>
-                        <div class="col-3 pr-3">
-                            <button class="btn btn-success btn-sm rounded-0 w-100"
-                                    type="button"
-                                    id="add_item">
-                            <i class="mdi mdi-plus"></i>
-                            </button>
-                        </div>
+                  <div class="row g-3 mb-3 align-items-end">
+                      <div class="col-6 col-sm-6">
+                          <label for="product-id" class="form-label">Seleccionar producto</label>
+                          <select id="product-id" class="form-select form-select-sm">
+                          <option value="--" disabled selected></option>
+                          {% for product in products %}
+                              <option value="{{ product.pk }}" data-stock="{{ product.stock }}">
+                                {{ product.name }}{% if product.category_id.name != 'TICKET' and product.category_id.name != 'ATRACCIÓN' %} (stk: {{ product.stock }}){% endif %}
+                              </option>
+                          {% endfor %}
+                          </select>
+                      </div>
+                      <div class="col-3 col-sm-3">
+                          <label for="product-qty" class="form-label">Cantidad</label>
+                          <input type="number"
+                                  class="form-control form-control-sm text-center"
+                                  step="any"
+                                  id="product-qty"
+                                  value="1">
+                      </div>
+                      <div class="col-3 pr-3">
+                          <button class="btn btn-success btn-sm rounded-0 w-100"
+                                  type="button"
+                                  id="add_item">
+                          <i class="mdi mdi-plus"></i>
+                          </button>
+                      </div>
+                  </div>
+                  <div class="bg-gradient bg-light border p-2 items-container">
+
+                    <div class="table-responsive">
+                      <table class="table table-bordered mb-0">
+                        <colgroup>
+                          <col width="5%">
+                          <col width="15%">
+                          <col width="40%">
+                          <col width="20%">
+                          <col width="20%">
+                        </colgroup>
+                        <thead>
+                          <tr class="bg-dark bg-gradient bg-opacity-50 text-light">
+                            <th class="py-1 px-2 text-center"></th>
+                            <th class="py-1 px-2 text-center">Cant.</th>
+                            <th class="py-1 px-2 text-center">Producto</th>
+                            <th class="py-1 px-2 text-center">Precio</th>
+                            <th class="py-1 px-2 text-center">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              <div class="bg-gradient bg-light border h-80 p-2 items-container">
-                <table class="table table-bordered mb-0">
-                  <colgroup>
-                    <col width="5%">
-                    <col width="15%">
-                    <col width="40%">
-                    <col width="20%">
-                    <col width="20%">
-                  </colgroup>
-                  <thead>
-                    <tr class="bg-dark bg-gradient bg-opacity-50 text-light">
-                      <th class="py-1 px-2 text-center"></th>
-                      <th class="py-1 px-2 text-center">Cant.</th>
-                      <th class="py-1 px-2 text-center">Producto</th>
-                      <th class="py-1 px-2 text-center">Precio</th>
-                      <th class="py-1 px-2 text-center">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                  </tbody>
-                </table>
-              </div>
-            </div>
             <div class="col-12 col-md-4 summary-column p-0">
               <div class="summary-panel bg-gradient bg-dark bg-opacity-50 border h-100 p-3 text-light">
-                <div class="d-flex justify-content-between align-items-center ">
-                    <h5 class="mb-0">Resumen de Venta</h5>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h5>Resumen de Venta</h5>
                         <div class="px-3 py-2 rounded text-end">
                             <input type="hidden" name="sub_total" value="0">
                             <input type="hidden" class="form-control form-control-sm rounded-0 text-end" step="any" min="0" max="100" name="descuento" value="0">
@@ -160,16 +176,14 @@
                             <input type="hidden" name="amount_change" value="0">
                             <input type="hidden" name="grand_total" value="0">
                             <input type="hidden" name="tax_amount" value="0">
-                            <span class="h6 mb-0">Total: </span>
+                            <span class="h6 ">Total: </span>
                             <span class="h4 fw-bold" id="grand_total">0.00</span>
                         </div>
                   </div>
 
-                  <div class="row mt-3 g-2">
+                  <div class="row g-2 mb-2">
                     <div class="col-6">
-                      <button class="btn btn-primary btn-sm rounded-0 w-100"
-                              type="button"
-                              id="scanQR">
+                      <button class="btn btn-primary btn-sm rounded-0 w-100" id="add-payment-method">
                         <i class="mdi mdi-plus"></i> Pago
                       </button>
                     </div>
@@ -181,33 +195,40 @@
                         </button>
                       </div>
                   </div>
-                  <div class="form-group mb-3">
-                    <label for="payment_type_id" class="control-label">Tipo de Pago</label>
-                    <select id="payment_type_id" class="form-select form-select-sm rounded-0" required>
-                        <option value=""></option>
-                        {% for pay in payment %}
-                            {% if product.pay_id.name == pay.name %}
-                            {% else %}
+
+                  <div id="payment-methods-container">
+                    <label for="payment_change" class="control-label">Pagos Registrados</label>
+                  
+                    <div class="payment-method-entry row g-2 mb-1">
+                      <div class="col-6">
+                        <select class="form-select form-select-sm payment-type" name="payment_type[]" required>
+                          <option value="">-- Tipo de pago --</option>
+                          {% for pay in payment %}
                             <option value="{{ pay.id }}">{{ pay.name }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-4">
+                        <input type="number" step="any" class="form-control form-control-sm tendered-amount" name="amount[]" placeholder="Monto" required>
+                      </div>
+                      <div class="col-2">
+                        <button type="button" class="btn btn-danger btn-sm remove-payment-method">&times;</button>
+                      </div>
+                    </div>
                   </div>
-                  <div class="form-group mb-3">
-                    <label for="tendered_amount" class="control-label"></label>
-                    <input type="number" step="any" id="tendered_amount" class="form-control form-control-lg rounded-0 text-end" value="0" required>
-                  </div>
+                                             
                   <div class="form-group mb-3">
                     <label for="payment_change" class="control-label">Vuelto</label>
-                    <input type="text" id="payment_change" class="form-control form-control-lg rounded-0 text-end" value="{{ 0|floatformat:2 }}" required disabled>
+                    <input type="text" id="payment_change" class="form-control form-control-sm text-end" value="{{ 0|floatformat:2 }}" required disabled>
                   </div>
+
               </div>
             </div>
           </div>
         </fieldset>
-      </form>
-    </div>
+    </form>
   </div>
+</div>
 
 
 
@@ -427,6 +448,14 @@
         $('[name="grand_total"]').val(parseFloat(grand_total).toLocaleString('en-US'));
         
       }
+
+    function togglePaymentFields() {
+      const hasProducts = $('#POS-field table tbody tr').length > 0;
+    
+      $('.payment-type').prop('disabled', !hasProducts);
+      $('.tendered-amount').prop('disabled', !hasProducts);
+      $('#add-payment-method').prop('disabled', !hasProducts); 
+    }
     
     $(function() {
         $('#product-id').select2({
@@ -443,9 +472,7 @@
             const productId = id;
             const featureId = feature_id;
             const selectedProduct = productData.find(product => product.id == productId);
-            
-
-    
+                
             // Validar que se seleccione una característica si el producto tiene características
             if (selectedProduct && selectedProduct.features.length > 0 && !featureId) {
                 alert("Debe seleccionar una característica del producto antes de agregarlo");
@@ -514,67 +541,74 @@
                 tr.find('.rem-item').click(function() {
                     if (confirm("¿Está seguro de eliminar " + data.name + " de la lista de productos?") == true) {
                         tr.remove()
+                        togglePaymentFields();
                         calc()
                     }
                 })
             } else {
                 alert("Producto no definido");
             }
+            togglePaymentFields();
+
         })
         $('[name="tax"], [name="descuento"]').on('input keypress keydown keyup', function() {
         calc();
         })
-        /*
-        $('#check_out').click(function() {
-            if ($('#POS-field table tbody tr').length <= 0) {
-                alert("Agregue al menos 1 producto primero")
-                return false;
-            }
-        
-            var payment_type_id = $('#payment_type_id').val()
-            $('[name="payment_type_id"]').val(payment_type_id)
 
-            var payment_type_id = $('#amoint').val()
-            if ($('[name="amount_change"]').val() < 0) {
-                alert("El monto ofrecido es menor que el monto a pagar")
-                return false;
-            }
-            //uni_modal("Registrar", "{% url 'checkout-modal' %}?grand_total=" + $('[name="grand_total"]').val())
 
-        })*/
 
         $('#check_out').on('click', function () {
-            const paymentType = $('#payment_type_id').val();
-            const tendered = parseFloat($('#tendered_amount').val()) || 0;
-            const total = parseFloat($('#grand_total').text()) || 0;
-            const change = tendered - total;
 
+            const payments = [];
+            let totalPagado = 0;
+
+            
+            $('.payment-method-entry').each(function () {
+              const paymentType = $(this).find('.payment-type').val();
+              const amount = parseFloat($(this).find('.tendered-amount').val()) || 0;
+
+              if (!paymentType || amount <= 0) return;
+
+              payments.push({ payment_type: paymentType, amount: amount });
+              totalPagado += amount;
+            });
+
+            const grandTotal = parseFloat($('#grand_total').text()) || 0;
+
+ 
+            if (totalPagado < grandTotal) {
+              alert("El monto total ofrecido es menor al total de la venta.");
+              return;
+            }
 
             if ($('#POS-field table tbody tr').length <= 0) {
                 alert("Agregue al menos 1 producto primero")
                 return false;
             }
-    
-            var payment_type_id = $('#payment_type_id').val()
-            $('[name="payment_type_id"]').val(payment_type_id)
 
-            if ($('[name="amount_change"]').val() < 0) {
-                alert("El monto ofrecido es menor que el monto a pagar")
-                return false;
+
+            const paymentTypes = [];
+
+            $('.payment-type').each(function () {
+              const val = $(this).val();
+              if (val) {
+                paymentTypes.push(val);
+              }
+            });
+          
+            const duplicates = paymentTypes.filter((item, index) => paymentTypes.indexOf(item) !== index);
+          
+            if (duplicates.length > 0) {
+              alert('No puedes usar el mismo método de pago más de una vez.');
+              return false;
             }
-            if (!paymentType) {
-              alert("Por favor selecciona un tipo de pago");
-              return;
-            }
-      
-            if (change < 0) {
-              alert("El monto entregado es menor al total a pagar");
-              return;
-            }
+
+            const change = totalPagado - grandTotal;
+
       
             // Mostrar valores en el modal
-            $('#modal_grand_total').text(total.toFixed(2));
-            $('#modal_tendered_amount').text(tendered.toFixed(2));
+            $('#modal_grand_total').text(grandTotal.toFixed(2));
+            $('#modal_tendered_amount').text(totalPagado.toFixed(2));
             $('#modal_amount_change').text(change.toFixed(2));
       
             // Mostrar el modal
@@ -583,10 +617,8 @@
           });
       
           $('#confirm_submit').on('click', function () {
-            // Opcional: usar el estado del switch
             const printTicket = $('#print_ticket').is(':checked');
-      
-            // Puedes enviar esta info como un input hidden si deseas
+          
             if (printTicket) {
               $('<input>').attr({
                 type: 'hidden',
@@ -594,41 +626,124 @@
                 value: '1'
               }).appendTo('#pos-form');
             }
-      
-            // Ahora sí: enviar formulario
+          
+            // Construir y agregar métodos de pago
+            const payments = [];
+            $('.payment-method-entry').each(function () {
+              const paymentType = $(this).find('.payment-type').val();
+              const amount = parseFloat($(this).find('.tendered-amount').val()) || 0;
+          
+              if (!paymentType || amount <= 0) return;
+          
+              payments.push({ payment_type: paymentType, amount: amount });
+            });
+          
+            $('<input>').attr({
+              type: 'hidden',
+              name: 'payment_methods',
+              value: JSON.stringify(payments)
+            }).appendTo('#pos-form');
+          
+            // Enviar formulario
             $('#pos-form').submit();
           });
+          
 
-
+        //Metodos Pago
+        $('#add-payment-method').on('click', function () {
+          const existingTypes = [];
+        
+          // Recolectar los métodos de pago ya seleccionados
+          $('.payment-type').each(function () {
+            const val = $(this).val();
+            if (val) {
+              existingTypes.push(val);
+            }
+          });
+        
+          // Verificar si ya están todos los métodos usados
+          const allTypes = [{% for pay in payment %}"{{ pay.id }}",{% endfor %}];
+          const availableTypes = allTypes.filter(id => !existingTypes.includes(id));
+        
+          if (availableTypes.length === 0) {
+            alert('Ya se han agregado todos los tipos de pago disponibles.');
+            return;
+          }
+        
+          // Evitar que se agregue más de la cantidad permitida
+          if ($('.payment-method-entry').length >= allTypes.length) {
+            alert('Ya se agregó la cantidad maxima de métodos de pago');
+            return;
+          }
+        
+          // Crear el select con solo los métodos de pago disponibles
+          let options = `<option value="">-- Tipo de pago --</option>`;
+          {% for pay in payment %}
+            if (!existingTypes.includes("{{ pay.id }}")) {
+              options += `<option value="{{ pay.id }}">{{ pay.name }}</option>`;
+            }
+          {% endfor %}
+        
+          const template = `
+            <div class="payment-method-entry row g-2 mb-1">
+              <div class="col-6">
+                <select class="form-select form-select-sm payment-type" name="payment_type[]" required>
+                  ${options}
+                </select>
+              </div>
+              <div class="col-4">
+                <input type="number" step="any" class="form-control form-control-sm tendered-amount" name="amount[]" placeholder="Monto" required>
+              </div>
+              <div class="col-2">
+                <button type="button" class="btn btn-danger btn-sm remove-payment-method">&times;</button>
+              </div>
+            </div>
+          `;
+        
+          $('#payment-methods-container').append(template);
+        });
+        
+        function calcularVuelto() {
+          const total = parseFloat($('#grand_total').text()) || 0;
+          let totalPagado = 0;
+      
+          $('.tendered-amount').each(function () {
+            const amount = parseFloat($(this).val()) || 0;
+            totalPagado += amount;
+          });
+      
+          const change = totalPagado - total;
+      
+          // Mostrar en campos ocultos si es necesario
+          $('[name="tendered_amount"]').val(totalPagado.toFixed(2));
+          $('[name="amount_change"]').val(change.toFixed(2));
+          $('#payment_change').val(change.toFixed(2)); // este es visible en el formulario
+        }
+      
 
         // Calcular Vuelto
         $(document).ready(function () {
-            function calcularVuelto() {
-              const tendered = parseFloat($('#tendered_amount').val()) || 0;
-              const total = parseFloat($('#grand_total').text()) || 0;
-              const change = tendered - total;
-        
-              $('[name="tendered_amount"]').val(tendered.toFixed(2));
-              $('[name="amount_change"]').val(change.toFixed(2));
-              $('#payment_change').val(change.toFixed(2));
-            }
-        
-            $('#tendered_amount').on('input', calcularVuelto);
-
+          togglePaymentFields();
+          $(document).on('input', '.tendered-amount', calcularVuelto);
+          calcularVuelto();
+          togglePaymentFields();
         });
 
+        $(document).on('click', '.remove-payment-method', function () {
+          $(this).closest('.payment-method-entry').remove();
+          calcularVuelto();  
+          togglePaymentFields();
+        });
+
+        
 
         $('#pos-form').submit(function(e) {
             e.preventDefault();
-
-            const tendered = parseFloat($('#tendered_amount').val()) || 0;
-            const total = parseFloat($('#grand_total').text()) || 0;
-            const change = tendered - total;
-            if (change < 0) {
-                alert("El monto entregado es menor al total a pagar");
-                return false;
-              }
-
+            if (!$('[name="payment_type[]"]').length) {
+              alert("Faltan métodos de pago");
+              return false;
+            }
+      
             var _this = $(this)
             $('.err-msg').remove();
             var el = $('<div>')

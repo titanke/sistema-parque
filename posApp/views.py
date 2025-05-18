@@ -1,9 +1,10 @@
 from datetime import datetime
+from urllib.parse import urlencode
 from django.utils import timezone
 from pickle import FALSE
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse
-from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, CashRegister, CashRegisterSales, Expense
+from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, CashRegister, CashRegisterSales, Expense, SalesPayment
 from django.db.models import Count, Sum
 from django.contrib.auth.models import User
 
@@ -912,75 +913,95 @@ def checkout_modal(request):
     return render(request, 'posApp/pos/checkout.html',context)
 
 
-@login_required
 def save_pos(request):
     resp = {'status': 'failed', 'msg': ''}
     data = request.POST
     pref = datetime.now().year + datetime.now().year
-    payment_type = data.get('payment_type_id')
-    payment = PaymentType.objects.filter(id=payment_type).first() if payment_type else None
-    i = 1
-    while True:
-        code = '{:0>5}'.format(i)
-        i += 1
-        check = Sales.objects.filter(code=str(pref) + str(code)).all()
-        if len(check) <= 0:
-            break
-    code = str(pref) + str(code)
-    grand_totalv = data.get('grand_total', '0')  
-    try:
-        grand_totalv = float(grand_totalv.replace(',', '').strip())  
-    except ValueError:
-        grand_totalv = 0.0  
-    try:
-        sales = Sales(code=code, sub_total=data['sub_total'], payment_type_id=payment, descuento=data['descuento'], tax=data['tax'],
-                      tax_amount=data['tax_amount'], grand_total=grand_totalv, tendered_amount=data['tendered_amount'],
-                      amount_change=data['amount_change']).save()
-        sale_id = Sales.objects.last().pk
-                
-        cash_register_id = data.get('cash_register_id')  
-        cash_register = CashRegister.objects.filter(id=cash_register_id).first() if cash_register_id else None
-        
-        i = 0
-        for prod in data.getlist('product_id[]'):
-            product_id = prod
-            sale = Sales.objects.filter(id=sale_id).first()
-            product = Products.objects.filter(id=product_id).first()
-            qty = data.getlist('qty[]')[i]
-            price = data.getlist('price[]')[i]
-            total = float(qty) * float(price)
 
-            if product.category_id.name.upper() != 'TICKET':
-                product.stock -= int(qty)
-                product.save()
+    try:
+        # Generar código único
+        i = 1
+        while True:
+            code = '{:0>5}'.format(i)
+            i += 1
+            full_code = str(pref) + str(code)
+            if not Sales.objects.filter(code=full_code).exists():
+                break
+
+        # Crear venta
+        sale = Sales.objects.create(
+            code=full_code,
+            sub_total=data['sub_total'],
+            descuento=data['descuento'],
+            tax=data['tax'],
+            tax_amount=data['tax_amount'],
+            grand_total=data['grand_total'],
+            tendered_amount=data['tendered_amount'],
+            amount_change=data['amount_change'],
+        )
+
+        # Registrar productos vendidos
+        for i, product_id in enumerate(data.getlist('product_id[]')):
+            product = Products.objects.get(id=product_id)
+            qty = int(data.getlist('qty[]')[i])
+            price = float(data.getlist('price[]')[i])
+            total = qty * price
 
             feature_id = data.getlist('feature_id[]')[i] if 'feature_id[]' in data else None
-            feature = None  
+            feature = ProductFeature.objects.filter(id=feature_id).first() if feature_id else None
 
-            if feature_id:
-                feature = ProductFeature.objects.filter(id=feature_id).first()
-                if feature:
-                    feature.stock -= int(qty) 
-                    feature.save() 
+            if product.category_id.name.strip().upper() not in ['TICKET', 'ATRACCIÓN']:
+                product.stock -= qty
+                product.save()
 
-            print({'sale_id': sale, 'product_id': product, 'feature_id': feature, 'qty': qty, 'price': price, 'total': total})
-                    
-            salesItems(sale_id=sale, product_id=product, feature_id=feature, qty=qty, price=price, total=total).save()
-            i += 1
-            
-        if cash_register:
-            CashRegisterSales.objects.create(cash_register=cash_register, sale=sale)
-    
+            if feature:
+                feature.stock -= qty
+                feature.save()
+
+            salesItems.objects.create(
+                sale_id=sale,
+                product_id=product,
+                feature_id=feature,
+                qty=qty,
+                price=price,
+                total=total
+            )
+
+        # Registrar pagos múltiples (usando arrays)
+        try:
+            payment_methods = json.loads(data.get('payment_methods', '[]'))
+        except json.JSONDecodeError:
+            payment_methods = []
+
+        for pay in payment_methods:
+            try:
+                payment_type = PaymentType.objects.get(id=pay['payment_type'])
+                amount = float(pay['amount'])
+                if amount > 0:
+                    SalesPayment.objects.create(sale=sale, payment_type=payment_type, amount=amount)
+            except (PaymentType.DoesNotExist, ValueError, KeyError):
+                continue  # ignora pagos inválidos
+
+
+        # Registrar en caja
+        cash_register_id = data.get('cash_register_id')
+        if cash_register_id:
+            cash_register = CashRegister.objects.filter(id=cash_register_id).first()
+            if cash_register:
+                CashRegisterSales.objects.create(cash_register=cash_register, sale=sale)
+
+        # Desactivar productos sin stock
+        Products.objects.filter(stock=0).update(status=0)
+
         resp['status'] = 'success'
-        resp['sale_id'] = sale_id
+        resp['sale_id'] = sale.pk
         messages.success(request, "Registro de venta exitoso")
-        
-        Products.objects.filter(stock=0).update(status=0)  # Update all products with 0 stock
-    except Exception as e:
-        resp['msg'] = f"Ocurrió un error: {str(e)}"
-        print("Unexpected error:", sys.exc_info()[0])
-    return HttpResponse(json.dumps(resp), content_type="application/json")
 
+    except Exception as e:
+        resp['msg'] = str(e)
+        print("Error inesperado:", e)
+
+    return JsonResponse(resp)
 
 @csrf_exempt
 def generate_qr(request):
@@ -1017,82 +1038,146 @@ def save_qr(request):
     product = Products.objects.get(code=qr_code)
     return JsonResponse({'product_id': product.id})
 
-def salesList(request):
-    # Obtener los parámetros de búsqueda
-    search_query = request.GET.get('search', '')
-    date_from = request.GET.get('date_from', '')
-    payment_type_id = request.GET.get('payment_type_id', '')
 
-    # Filtrar ventas
+
+def clean_get_params(params):
+    """
+    Elimina listas y entradas vacías del QueryDict.
+    Convierte listas de un solo elemento en valores simples.
+    """
+    clean = {}
+    for key in params:
+        value = params.getlist(key)
+        if value:
+            clean[key] = value[0]  # solo tomamos el primer valor
+    return clean
+
+
+def salesList(request):
+    search_query = request.GET.get('search', '')
+    date_from = request.GET.get('date_from') or datetime.now().date().strftime('%Y-%m-%d')
+    date_to = request.GET.get('date_to', '')
+    payment_type_id = request.GET.get('payment_type_id', '')
+    user_id = request.GET.get('user_id', '')
+    per_page = int(request.GET.get('per_page', 10))
+    page_number = request.GET.get('page', 1)
+
     sales = Sales.objects.all()
-    
+
     if search_query:
         sales = sales.filter(Q(code__icontains=search_query))
 
-    if date_from:
+    try:
+        date_from_dt = datetime.strptime(date_from, '%Y-%m-%d')
+        sales = sales.filter(date_added__date__gte=date_from_dt)
+    except ValueError:
+        pass
+
+    if date_to:
         try:
-            date_from = datetime.strptime(date_from, '%Y-%m-%d')
-            sales = sales.filter(date_added__date__gte=date_from)
+            date_to_dt = datetime.strptime(date_to, '%Y-%m-%d')
+            sales = sales.filter(date_added__date__lte=date_to_dt)
         except ValueError:
-            pass  # Manejar error de formato de fecha si es necesario
+            pass
 
     if payment_type_id:
-        # Filtrar por tipo de pago si se selecciona
-        sales = sales.filter(payment_type_id_id=payment_type_id)
+        sales = sales.filter(sales_payments__payment_type_id=payment_type_id).distinct()
+
+    if user_id:
+        sales = sales.filter(cashregistersales__cash_register__user_id=user_id)
 
     sale_data = []
-    for sale in sales:
+    for sale in sales.distinct():
         data = {}
-        # Obtener todos los campos básicos de la instancia
+
         for field in sale._meta.get_fields(include_parents=False):
             if field.related_model is None:
                 data[field.name] = getattr(sale, field.name)
 
-        # Incluir el campo payment_type (nombre)
-        data['payment_type'] = sale.payment_type_id.name if sale.payment_type_id else None
+        # Métodos de pago
+        data['payment_methods'] = [
+            {
+                'type': pay.payment_type.name,
+                'amount': format(pay.amount, '.2f')
+            } for pay in sale.sales_payments.all()
+        ]
 
-        # Obtener los items relacionados
+        # Items
         data['items'] = salesItems.objects.filter(sale_id=sale).all()
         data['item_count'] = len(data['items'])
+        
+        cash_register_sale = sale.cashregistersales_set.first()
+        if cash_register_sale:
+            if cash_register_sale.cash_register.user:
+                data['username'] = cash_register_sale.cash_register.user.username
+            else:
+                data['username'] = "—"
 
-        # Formatear el tax_amount si está presente
-        if 'tax_amount' in data:
-            data['tax_amount'] = format(float(data['tax_amount']), '.2f')
+            # Agregar la fecha de apertura de la caja
+            data['opening_date'] = cash_register_sale.cash_register.opening_date
+        else:
+            data['username'] = "—"
+            data['opening_date'] = "—"
 
         sale_data.append(data)
 
-    # Obtener todos los tipos de pago para el filtro
+    # Paginación
+    paginator = Paginator(sale_data, per_page)
+    page_obj = paginator.get_page(page_number)
+
+    # Para filtros
     payment_types = PaymentType.objects.all()
+    users = User.objects.filter(cashregister__isnull=False).distinct()
+    today = datetime.now()
+
+    # Limpiar base_url
+    from urllib.parse import urlencode
+    def clean_get_params(params):
+        clean = {}
+        for key in params:
+            value = params.getlist(key)
+            if value:
+                clean[key] = value[0]
+        return clean
+
+    base_url = urlencode(clean_get_params(request.GET), doseq=True)
 
     context = {
         'page_title': 'Transacciones',
-        'sale_data': sale_data,
-        'search_query': search_query,
-        'date_from': date_from.strftime('%Y-%m-%d') if date_from else '',
-        'payment_types': payment_types,  # Pasar los tipos de pago al contexto
+        'sale_data': page_obj.object_list,
+        'page_obj': page_obj,
+        'base_url': base_url,
+        'payment_types': payment_types,
+        'users': users,
+        'date_from': date_from,
+        'today': datetime.now().date().strftime('%Y-%m-%d'),
     }
     return render(request, 'posApp/sales.html', context)
 
 @login_required
 def receipt(request):
     id = request.GET.get('id')
-    sales = Sales.objects.filter(id = id).first()
+    sales = Sales.objects.filter(id=id).first()
+    
     transaction = {}
     for field in Sales._meta.get_fields():
         if field.related_model is None:
-            transaction[field.name] = getattr(sales,field.name)
+            transaction[field.name] = getattr(sales, field.name)
+    
     if 'tax_amount' in transaction:
         transaction['tax_amount'] = format(float(transaction['tax_amount']))
-    ItemList = salesItems.objects.filter(sale_id = sales).all()
+
+    ItemList = salesItems.objects.filter(sale_id=sales).all()
+    
+    salesPayments = SalesPayment.objects.filter(sale=sales)
+
     context = {
-        "transaction" : transaction,
-        "salesItems" : ItemList,
+        "transaction": transaction,
+        "salesItems": ItemList,
+        "salesPayments": salesPayments,  # ✅ Agregado aquí
     }
 
-    return render(request, 'posApp/receipt.html',context)
-    # return HttpResponse('')
-
-
+    return render(request, 'posApp/receipt.html', context)
 
 
 
@@ -1108,7 +1193,7 @@ def delete_sale(request):
             
             for item in sale_items:
                 product = item.product_id
-                if product.category_id.name.upper() != 'TICKET':
+                if product.category_id.name.strip().upper() not in ['TICKET', 'ATRACCIÓN']:
                     product.stock += item.qty
 
                     if product.status == 0 and product.stock > 0:

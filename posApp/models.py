@@ -44,6 +44,16 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Products, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='products/', null=True, blank=True)  
 
+  
+class SalesPayment(models.Model):
+    sale = models.ForeignKey('Sales', on_delete=models.CASCADE, related_name='sales_payments')
+    payment_type = models.ForeignKey('PaymentType', on_delete=models.RESTRICT)
+    amount = models.FloatField(default=0)
+
+    def __str__(self):
+        return f"{self.sale.code} - {self.payment_type.name} - {self.amount}"
+
+    
     
 class PaymentType(models.Model):
     name = models.TextField()
@@ -82,7 +92,6 @@ class Sales(models.Model):
     descuento = models.FloatField(default=0)
     tax_amount = models.FloatField(default=0)
     tax = models.FloatField(default=0)
-    payment_type_id = models.ForeignKey('PaymentType', on_delete=models.RESTRICT)
     tendered_amount = models.FloatField(default=0)
     amount_change = models.FloatField(default=0)
     date_added = models.DateTimeField(default=timezone.now)
@@ -90,6 +99,7 @@ class Sales(models.Model):
 
     def __str__(self):
         return self.code
+
 
 class CashRegisterSales(models.Model):
     cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE)

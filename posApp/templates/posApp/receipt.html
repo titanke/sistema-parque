@@ -98,141 +98,112 @@
 </style>
 
 <div class="container-fluid">
-    <div id="outprint" style="margin: 0 auto;">
-        <div class="lh-1 text-center">
-            <img src="media/products/logo.png" alt="Logo" style="width: 150px; height: auto; margin-bottom: 5px;">
-            <center><small class="fw-bold">PARQUE DE AVENTURAS SANTO DOMINGO</small></center>
-            <center><small class="fw-bold">BOLETA DE VENTA</small></center>
-            <center><small class="fw-bold">CODIGO DE TRANSACCION: {{ transaction.code }}</small></center>
-        </div>
-        <hr>
-        <div class="lh-1">
-            <div>
-                {{ transaction.date_added|date:"d M Y" }} <br>
-                <span>RUC     : 1010101010</span>  <br>
-                <span>Telefono: 942352219</span>  <br>
-            </div>
-        </div>
-        <hr>
-
-        <div class="clear-fix py-1"></div>
-        <div class="lh-1">
-            <div class="d-flex w-100 align-items-end border-bottom">
-                <div class="col-3 text-center fw-bold">Cantidad</div>
-                <div class="col-5 text-center fw-bold">Producto</div>
-                <div class="col-4 text-center fw-bold">Importe</div>
-            </div>
-            <br>
-
-            {% for item in salesItems %}
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-1 text-center fw-bold">{{ item.qty|intcomma|floatformat:0 }}</div>
-                <div class="fw-bold text-center">
-                    <small>{{ item.qty }}</small><br>
-                </div>
-                <div class="col-8 fw-bold text-center">
-                    <div class="lh-6">
-                        <small>{{ item.product_id.name }} {% if item.feature_id %}{{ item.feature_id.color }}{% endif %} {% if item.feature_id %}{{ item.feature_id.size }}{% endif %}</small><br>
-                    </div>
-                </div>
-                <div class="col-2 text-end fw-bold">{{ item.total|floatformat:2 }}</div>
-            </div>
-            {% endfor %}
-
-            <hr>
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-6 text-start fw-bold">Subtotal</div>
-                <div class="col-6 text-end fw-bold">{{ transaction.sub_total|floatformat:2 }}</div>
-            </div>
-            <!--
-                <div class="d-flex w-100 align-items-end">
-                    <div class="col-6 text-start fw-bold">Descuento</div>
-                    <div class="col-6 text-end fw-bold">{{ transaction.descuento|intcomma }}</div>
-                </div>
-                <div class="d-flex w-100 align-items-end">
-                    <div class="col-6 text-start fw-bold">IGV <small></small>: {{ transaction.tax|intcomma }} %</div>
-                    <div class="col-6 text-end fw-bold">{{ transaction.tax_amount|intcomma|floatformat:0 }}</div>
-                </div>
-        
-            -->
-
-
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-6 text-start fw-bold">Total</div>
-                <div class="col-6 text-end fw-bold">{{ transaction.grand_total|floatformat:2 }}</div>
-            </div>
-            <hr>
-
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-12 text-start fw-bold">Métodos de Pago</div>
-            </div>
-            
-            {% for payment in salesPayments %}
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-6 text-start">{{ payment.payment_type.name }}</div>
-                <div class="col-6 text-end">{{ payment.amount|floatformat:2 }}</div>
-            </div>
-            {% endfor %}
-            <hr>
-            
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-6 text-start fw-bold">Recibido</div>
-                <div class="col-6 text-end fw-bold">{{ transaction.tendered_amount|intcomma }}</div>
-            </div>
-            <div class="d-flex w-100 align-items-end">
-                <div class="col-6 text-start fw-bold">Vuelto</div>
-                <div class="col-6 text-end fw-bold">{{ transaction.amount_change|intcomma }}</div>
-            </div>
+    <div id="outprint" style="max-width: 300px; margin: 0 auto; padding: 10px; font-size: 11px; font-family: monospace;">
+        <div class="text-center mb-2">
+            <img src="media/products/logo.png" alt="Logo" style="width: 120px; height: auto; margin-bottom: 5px;">
+            <div class="fw-bold text-uppercase">Parque de Aventuras Santo Domingo</div>
+            <div class="fw-bold text-uppercase">Boleta de Venta</div>
+            <div class="fw-bold">Código de Venta: {{ transaction.code }}</div>
         </div>
 
-        <hr>
+        <hr class="my-1">
+        <input type="hidden" id="auto_print_ticket" value="{{ print_ticket|yesno:'1,0' }}">
+
+        <div class="mb-2">
+            <div class="d-flex justify-content-between">
+                <span>Fecha: {{ transaction.date_added|date:"d/m/Y" }}</span>
+                <span>Hora: {{ transaction.date_added|date:"H:i" }}</span>
+            </div>
+            <div>RUC: 1010101010</div>
+            <div>Teléfono: 942352219</div>
+        </div>
+
+        <hr class="my-1">
+        <div class="text-center fw-bold text-uppercase mb-1">Boletería</div>
+
+        <div class="d-flex fw-bold text-center border-bottom py-1">
+            <div class="col-5">Producto</div>
+            <div class="col-3">Cant.</div>
+            <div class="col-4">Importe</div>
+        </div>
 
         {% for item in salesItems %}
-        {% if item.product_id.category_id.name == "ATRACCIÓN" %}
-            {% for i in "x"|ljust:item.qty %}
-                <div class="ticket-header">
-                    <!-- Fila 1: Empresa y fecha -->
-                    <div class="ticket-row">
-                        <div class="left">Parque de Aventuras Santo Domingo</div>
-                        <div class="right">{{ transaction.date_added|date:"d/m/Y" }}</div>
-                    </div>
-    
-                    <!-- Fila 2: Producto y precio centrado -->
-                    <div class="ticket-row centered">
-                        <div class="item">{{ item.product_id.name }}</div>
-                        <div>S/. {{ item.price|floatformat:2 }}</div>
-                    </div>
-    
-                    <!-- Fila 3: Mensaje y código -->
-                    <div class="ticket-row">
-                        <div class="left">Válido solo por hoy</div>
-                        <div class="right">Cod: {{ transaction.code }}</div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endfor %}
-    
+        <div class="d-flex py-1 align-items-center text-center">
+            <div class="col-5">
+                <small>
+                    {{ item.product_id.name }}
+                    {% if item.feature_id %}
+                        {{ item.feature_id.color }} {{ item.feature_id.size }}
+                    {% endif %}
+                </small>
+            </div>
+            <div class="col-3">{{ item.qty|floatformat:0 }}</div>
+            <div class="col-4 text-end">S/ {{ item.total|floatformat:2 }}</div>
+        </div>
+        {% endfor %}
 
+        <hr class="my-1">
+
+        <div>
+            <div class="d-flex justify-content-between">
+                <div class="fw-bold">Subtotal</div>
+                <div>S/ {{ transaction.sub_total|floatformat:2 }}</div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <div class="fw-bold">Total</div>
+                <div>S/ {{ transaction.grand_total|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <hr class="my-1">
+
+        <div class="fw-bold mb-1">Métodos de Pago</div>
+        {% for payment in salesPayments %}
+        <div class="d-flex justify-content-between">
+            <div>{{ payment.payment_type.name }}</div>
+            <div>S/ {{ payment.amount|floatformat:2 }}</div>
+        </div>
+        {% endfor %}
+
+        <hr class="my-1">
+
+        <div>
+            <div class="d-flex justify-content-between fw-bold">
+                <div>Recibido</div>
+                <div>S/ {{ transaction.tendered_amount|floatformat:2 }}</div>
+            </div>
+            <div class="d-flex justify-content-between fw-bold">
+                <div>Vuelto</div>
+                <div>S/ {{ transaction.amount_change|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <hr class="my-2">
+
+        <div class="text-center fw-bold text-uppercase">¡Gracias por su visita!</div>
     </div>
-    <hr>
-    <div class="clear-fix py-3"></div>
-    <div class="d-flex w-100 justify-content-end">
-        <button class="btn btn-light bg-gradient border rounded-0 btn-sm me-1" type="button" id="receipt_print"><i class="mdi mdi-printer"></i> Imprimir</button>
-        <button class="btn btn-secondary bg-gradient border rounded-0 btn-sm" type="button" data-bs-dismiss="modal"><i class="mdi mdi-close"></i> Cerrar</button>
+
+    <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-light bg-gradient border rounded-0 btn-sm me-1" type="button" id="receipt_print">
+            <i class="mdi mdi-printer"></i> Imprimir
+        </button>
+        <button class="btn btn-secondary bg-gradient border rounded-0 btn-sm" type="button" data-bs-dismiss="modal">
+            <i class="mdi mdi-close"></i> Cerrar
+        </button>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
     $(function () {
+        // Aseguramos que el clic en el botón se asocie correctamente
         $('#receipt_print').click(function () {
             const element = document.getElementById('outprint');
             if (!element) {
                 console.error('❌ Elemento #outprint no encontrado');
                 return;
             }
-
+        
             const opt = {
                 margin: 0,
                 filename: 'ticket.pdf',
@@ -244,19 +215,19 @@
                     orientation: 'portrait'
                 }
             };
-
+        
             html2pdf().set(opt).from(element).output('blob').then(function (pdfBlob) {
                 const blobUrl = URL.createObjectURL(pdfBlob);
+                // Solo abrir en nueva pestaña, sin descargar
                 window.open(blobUrl, '_blank');
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = 'ticket.pdf';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
             }).catch(function (error) {
                 console.error('❌ Error al generar el PDF:', error);
             });
         });
+
+        const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
+        if (autoPrint) {
+            $('#receipt_print').trigger('click');
+        }
     });
 </script>

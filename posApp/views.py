@@ -1171,7 +1171,8 @@ def salesList(request):
 def receipt(request):
     id = request.GET.get('id')
     sales = Sales.objects.filter(id=id).first()
-    
+    print_ticket = request.GET.get('print_ticket') == '1'
+
     transaction = {}
     for field in Sales._meta.get_fields():
         if field.related_model is None:
@@ -1187,7 +1188,8 @@ def receipt(request):
     context = {
         "transaction": transaction,
         "salesItems": ItemList,
-        "salesPayments": salesPayments,  # ✅ Agregado aquí
+        "salesPayments": salesPayments,
+        "print_ticket": print_ticket,  
     }
 
     return render(request, 'posApp/receipt.html', context)

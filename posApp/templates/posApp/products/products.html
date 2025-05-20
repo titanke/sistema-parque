@@ -82,44 +82,54 @@
 
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
   <div class="mdc-card">
+    <form method="get" action="{% url 'product-page' %}">
       <div class="row mb-3">
-        <div class="col-md-6 col-lg-4">
-          <form method="get" action="{% url 'product-page' %}">
-              <div class="input-group">
-                  <input type="text" name="search" class="form-control" placeholder="Buscar Producto" value="{{ request.GET.search }}">
-                  <button type="submit" class="btn btn-primary">Buscar</button>
-              </div>
-          </form>
+        <!-- Buscar Producto -->
+        <div class="col-md-6 col-lg-2 mb-2">
+          <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Buscar Producto" value="{{ request.GET.search }}">
+          </div>
         </div>
-  
-      <div class="col-md-6 col-lg-4">
-          <form method="get" action="{% url 'product-page' %}">
-              <div class="input-group">
-                  <select name="category" id="category-filter" class="form-select">
-                      <option value="">Todas las categorías</option>
-                      {% for category_id in categories %}
-                          <option value="{{ category_id.id }}" {% if category_filter == category_id.id %}selected{% endif %}>
-                              {{ category_id.name }} 
-                          </option>
-                      {% endfor %}
-                  </select>
-                  <button type="submit" class="btn btn-primary">Filtrar</button>
-              </div>
-          </form>
-      </div>
-      <div class="col-md-6 col-lg-4">
-        <form method="get" action="{% url 'product-page' %}">
-            <div class="input-group">
-                <select name="status" id="status-filter" class="form-select">
-                  <option value="">Estado</option>
-                    <option value="1">Activo</option>
-                    <option value="0">Inactivo</option>
-                </select>
-                <button type="submit" class="btn btn-primary">Filtrar</button>
+    
+        <!-- Filtrar por Categoría -->
+        <div class="col-md-6 col-lg-2 mb-2">
+          <div class="input-group">
+            <select name="category" class="form-select">
+              <option value="">Todas las categorías</option>
+              {% for category_id in categories %}
+                <option value="{{ category_id.id }}" {% if category_filter|add:""|stringformat:"s" == category_id.id|stringformat:"s" %}selected{% endif %}>
+                  {{ category_id.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+    
+        <!-- Filtrar por Estado -->
+        <div class="col-md-6 col-lg-2 mb-2">
+          <div class="input-group">
+            <select name="status" class="form-select">
+              <option value="">Todos los estados</option>
+              <option value="1" {% if request.GET.status == "1" %}selected{% endif %}>Activo</option>
+              <option value="0" {% if request.GET.status == "0" %}selected{% endif %}>Inactivo</option>
+            </select>
+          </div>
+        </div>
+    
+        <!-- Botones -->
+        <div class="col-12 col-lg-2 mb-2">
+          <div class="row">
+            <div class="col-6">
+              <button type="submit" class="btn btn-primary w-100">Buscar</button>
             </div>
-        </form>
-    </div>
+            <div class="col-6">
+              <a href="{% url 'product-page' %}" class="btn btn-secondary w-100">Limpiar</a>
+            </div>
+          </div>
+        </div>
       </div>
+    </form>
+    
       <div class="table-responsive">
           <table class="table table-striped table-bordered">
               <colgroup>
@@ -135,7 +145,6 @@
                       <th class="text-center py-1">#</th>
                       <th class="text-center py-1">Categoria</th>
                       <th class="text-center py-1">Producto</th>
-                      <th class="text-center py-1">Descripcion</th>
                       <th class="text-center py-1">Precio Unit.</th>
                       <th class="text-center py-1">Stock</th>
                       <th class="text-center py-1">Status</th>
@@ -150,10 +159,9 @@
                       <td class="px-2 py-1 text-center">{{ product.id }}</td>
                       <td class="px-2 py-1 text-start">{{ product.category_id }}</td>
                       <td class="px-2 py-1 text-start">{{ product.code }} - {{ product.name }}</td>
-                      <td class="px-2 py-1 text-start">{{ product.description }}</td>
-                      <td class="px-2 py-1 text-start">{{ product.price }}</td>
+                      <td class="px-2 py-1 text-start">S/ {{ product.price }}</td>
                       <td class="px-2 py-1 text-start">
-                          {% if product.category_id.name|lower == 'ticket' %}
+                        {% if product.category_id.name|lower == 'ticket' or product.category_id.name|lower == 'atracción' %}
                               -
                           {% else %}
                               {{ product.stock }}
@@ -174,11 +182,11 @@
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data" type="button" data-id="{{ product.pk }}" title="Borrar">
                             <i class="material-icons mdc-button__icon">delete</i>
                         </button>
+
+                      <!-- 
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--blue mdc-ripple-upgraded foto" type="button" data-id="{{ product.image }}" title="Imagen">
                           <i class="fa-solid fa-image"></i>
                         </button>
-                      <!-- 
-
                         <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--dark mdc-ripple-upgraded generate-qr" type="button" data-id="{{ product.pk }}" title=" QR">
                             <i class="fa-solid fa-qrcode"></i>
                         </button>
@@ -191,21 +199,60 @@
           </table>
       </div>
 
-      <div class="d-flex justify-content-between mb-3">
-        <!-- Mostrar el total de productos -->
-        <div>
-            Mostrando {{ products.start_index }} - {{ products.end_index }} de {{ total_products }} productos
-        </div>
-    
-        <!-- Paginación -->
-        <div>
-            <div class="pagination">
-                {% for page_num in products.paginator.page_range %}
-                    <a href="?page={{ page_num }}&search={{ request.GET.search }}" class="page-link">{{ page_num }}</a>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+      <div class="row align-items-center mt-3">
+          <div class="col-md-6">
+              <p class="mb-0">
+                  Mostrando {{ products.start_index }} - {{ products.end_index }} de {{ total_products }} productos
+              </p>
+          </div>
+          <div class="col-md-6">
+              <div class="d-flex justify-content-end align-items-center gap-2">
+                  <form method="get" class="d-flex align-items-center me-2">
+                      <!-- Mantener filtros -->
+                      <input type="hidden" name="search" value="{{ request.GET.search }}">
+                      <input type="hidden" name="category" value="{{ request.GET.category }}">
+                      <input type="hidden" name="status" value="{{ request.GET.status }}">
+      
+                      <label for="per_page" class="me-1 mb-0">Mostrar</label>
+                      <select name="per_page" id="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                          <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5</option>
+                          <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10</option>
+                          <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20</option>
+                          <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                      </select>
+                  </form>
+      
+                  <nav aria-label="Paginación">
+                      <ul class="pagination pagination-sm mb-0">
+                          {% if products.has_previous %}
+                              <li class="page-item">
+                                  <a class="page-link" href="?{{ base_url }}&page={{ products.previous_page_number }}">Anterior</a>
+                              </li>
+                          {% else %}
+                              <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                          {% endif %}
+      
+                          {% for num in products.paginator.page_range %}
+                              {% if products.number == num %}
+                                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                              {% elif num > products.number|add:-3 and num < products.number|add:3 %}
+                                  <li class="page-item"><a class="page-link" href="?{{ base_url }}&page={{ num }}">{{ num }}</a></li>
+                              {% endif %}
+                          {% endfor %}
+      
+                          {% if products.has_next %}
+                              <li class="page-item">
+                                  <a class="page-link" href="?{{ base_url }}&page={{ products.next_page_number }}">Siguiente</a>
+                              </li>
+                          {% else %}
+                              <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                          {% endif %}
+                      </ul>
+                  </nav>
+              </div>
+          </div>
+      </div>
+      
     
   </div>
 </div>

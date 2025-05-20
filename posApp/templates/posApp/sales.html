@@ -1,4 +1,20 @@
 {% extends "posApp/base.html" %} {% load humanize %} {% block pageContent %}
+<style>
+    /* Ajustes personalizados solo para form-floating de fechas */
+    .form-floating-sm .form-control {
+      height: calc(2.375rem + 2px); /* Igual que el input normal de Bootstrap 4/5 */
+      padding-top: 1rem;
+      padding-bottom: 0.375rem;
+      font-size: 0.9rem;
+    }
+  
+    .form-floating-sm label {
+      padding-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+</style>
+
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
         <div class="d-flex justify-content-between align-items-center">
@@ -17,13 +33,20 @@
                   </div>
                   <div class="col-12 col-lg-4 mb-2">
                     <div class="row">
-                      <div class="col-6">
-                        <input type="date" name="date_from" class="form-control" value="{{ date_from|default:today }}">
+                        <div class="col-6">
+                          <div class="form-floating form-floating-sm">
+                            <input type="date" id="date_from" name="date_from" class="form-control" placeholder="Desde" value="{{ date_from|default:today }}">
+                            <label for="date_from">Desde</label>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="form-floating form-floating-sm">
+                            <input type="date" id="date_to" name="date_to" class="form-control" placeholder="Hasta" value="{{ date_to|default:'' }}">
+                            <label for="date_to">Hasta</label>
+                          </div>
+                        </div>
                       </div>
-                      <div class="col-6">
-                        <input type="date" name="date_to" class="form-control" value="{{ date_to|default:'' }}">
-                      </div>
-                    </div>
+                      
                   </div>
                   <div class="col-md-6 col-lg-2 mb-2">
                     <select name="user_id" class="form-select">
@@ -36,7 +59,7 @@
                     </select>
                 </div>
                   <div class="col-md-6 col-lg-2 mb-2">
-                    <select id="payment_type_id" name="payment_type_id" class="form-control">
+                    <select id="payment_type_id" name="payment_type_id" class="form-select">
                       <option value="">Tipo de Pago</option>
                       {% for payment_type in payment_types %}
                         <option value="{{ payment_type.id }}" {% if request.GET.payment_type_id == payment_type.id|stringformat:"s" %}selected{% endif %}>
@@ -107,7 +130,7 @@
                                 —
                             {% endfor %}
                         </td>
-                        <td class="px-2 py-1 text-end">{{ sale.grand_total|floatformat:2 }}</td>
+                        <td class="px-2 py-1 text-end">S/ {{ sale.grand_total|floatformat:2 }}</td>
                         <!--
                         <td class="px-2 py-1 text-end">({{ sale.tax }}%) {{ sale.tax_amount|intcomma:2 }}</td>
                         <td class="px-2 py-1 text-end">{{ sale.descuento|intcomma:2 }}</td>
@@ -128,61 +151,62 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <div class="row align-items-center mt-3">
-                <div class="col-md-6">
-                    <p class="mb-0">
-                        Mostrando 
-                        {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex justify-content-end align-items-center gap-2">
-                        <form method="get" class="d-flex align-items-center me-2">
-                            <!-- Mantén los filtros existentes -->
-                            <input type="hidden" name="search" value="{{ request.GET.search }}">
-                            <input type="hidden" name="date_from" value="{{ request.GET.date_from }}">
-                            <input type="hidden" name="payment_type_id" value="{{ request.GET.payment_type_id }}">
+
             
-                            <label for="per_page" class="me-1 mb-0">Mostrar</label>
-                            <select name="per_page" id="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5</option>
-                                <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10</option>
-                                <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20</option>
-                                <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
-                            </select>
-                        </form>
-            
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination pagination-sm mb-0">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{{ base_url }}&page={{ page_obj.previous_page_number }}">Anterior</a>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        </div>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-6">
+                <p class="mb-0">
+                    Mostrando 
+                    {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+                </p>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <form method="get" class="d-flex align-items-center me-2">
+                        <!-- Mantén los filtros existentes -->
+                        <input type="hidden" name="search" value="{{ request.GET.search }}">
+                        <input type="hidden" name="date_from" value="{{ request.GET.date_from }}">
+                        <input type="hidden" name="payment_type_id" value="{{ request.GET.payment_type_id }}">
+        
+                        <label for="per_page" class="me-1 mb-0">Mostrar</label>
+                        <select name="per_page" id="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="5" {% if request.GET.per_page == '5' %}selected{% endif %}>5</option>
+                            <option value="10" {% if request.GET.per_page == '10' or not request.GET.per_page %}selected{% endif %}>10</option>
+                            <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20</option>
+                            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+                        </select>
+                    </form>
+        
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{{ base_url }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+                            {% endif %}
+        
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                                    <li class="page-item"><a class="page-link" href="?{{ base_url }}&page={{ num }}">{{ num }}</a></li>
                                 {% endif %}
-            
-                                {% for num in page_obj.paginator.page_range %}
-                                    {% if page_obj.number == num %}
-                                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
-                                        <li class="page-item"><a class="page-link" href="?{{ base_url }}&page={{ num }}">{{ num }}</a></li>
-                                    {% endif %}
-                                {% endfor %}
-            
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{{ base_url }}&page={{ page_obj.next_page_number }}">Siguiente</a>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-                    </div>
+                            {% endfor %}
+        
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{{ base_url }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>

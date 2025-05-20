@@ -7,6 +7,12 @@ from django.views.generic.base import RedirectView
 urlpatterns = [
     path('redirect-admin', RedirectView.as_view(url="/admin"),name="redirect-admin"),
     path('', views.home, name="home-page"),
+    path('dashboard/monthly-sales/', views.monthly_sales_data, name='monthly-sales-data'),
+    
+    path('dashboard/monthly-sales/', views.monthly_sales_data),
+    path('dashboard/daily-gains/', views.daily_gains_data),
+    path('dashboard/product-pie/', views.product_sales_pie_data),
+        
     path('login', auth_views.LoginView.as_view(template_name = 'posApp/login.html',redirect_authenticated_user=True), name="login"),
     path('userlogin', views.login_user, name="login-user"),
     path('logout', views.logoutuser, name="logout"),

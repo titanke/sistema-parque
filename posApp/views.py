@@ -1,7 +1,11 @@
 from datetime import datetime
 from urllib.parse import urlencode
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from pickle import FALSE
+from django.db.models import F, Sum
+from collections import defaultdict
+
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse
 from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, CashRegister, CashRegisterSales, Expense, SalesPayment
@@ -55,36 +59,134 @@ def logoutuser(request):
     logout(request)
     return redirect('/')
 
-# Create your views here.
+
 @login_required
 def home(request):
-    now = datetime.now()
-    current_year = now.strftime("%Y")
-    current_month = now.strftime("%m")
-    current_day = now.strftime("%d")
-    categories = len(Category.objects.all())
-    products = len(Products.objects.all())
-    transaction = len(Sales.objects.filter(
-        date_added__year=current_year,
-        date_added__month = current_month,
-        date_added__day = current_day
-    ))
+    now = timezone.now()
+    current_year = now.year
+    current_month = now.month
+    current_day = now.day
+    months = ['01', '02', '03', '04', '05', '06',
+              '07', '08', '09', '10', '11', '12']
+    categories = Category.objects.count()
+    products = Products.objects.count()
+
     today_sales = Sales.objects.filter(
         date_added__year=current_year,
-        date_added__month = current_month,
-        date_added__day = current_day
-    ).all()
-    total_sales = sum(today_sales.values_list('grand_total',flat=True))
+        date_added__month=current_month,
+        date_added__day=current_day
+    )
+    transaction = today_sales.count()
+    total_sales = sum(today_sales.values_list('grand_total', flat=True))
+
     context = {
-        'page_title':'Inicio',
-        'categories' : categories,
-        'products' : products,
-        'transaction' : transaction,
-        'total_sales' : total_sales,
+        'page_title': 'Inicio',
+        'categories': categories,
+        'products': products,
+        'transaction': transaction,
+        'total_sales': total_sales,
+        'months': months,
+        'year_range': range(current_year - 4, current_year + 1),  # ✅ Aquí
+        'now': now,  # para usar `now.year` en el template
     }
-    return render(request, 'posApp/home.html',context)
+    return render(request, 'posApp/home.html', context)
+
+@login_required
+def monthly_sales_data(request):
+    from datetime import datetime
+    from .models import salesItems, Expense  # Ajusta si tu modelo está en otro archivo
+    year = int(request.GET.get('year', datetime.now().year))
+    category_id = request.GET.get('category_id', None)
+
+    # Inicializar estructuras
+    sales_data = [0] * 12
+    expense_data = [0] * 12
+    product_sales_by_month = [defaultdict(float) for _ in range(12)]
+
+    items_qs = salesItems.objects.select_related('sale_id', 'product_id') \
+        .filter(sale_id__date_added__year=year)
+
+    if category_id:
+        items_qs = items_qs.filter(product_id__category_id=category_id)
+
+    for item in items_qs:
+        month = item.sale_id.date_added.month - 1
+        sales_data[month] += float(item.total)
+        product_sales_by_month[month][item.product_id.name] += float(item.total)
+
+    expenses = Expense.objects.filter(expense_date__year=year) \
+        .values('expense_date__month') \
+        .annotate(total=Sum('amount'))
+
+    for e in expenses:
+        month = e['expense_date__month'] - 1
+        expense_data[month] = float(e['total'])
+
+    # Convertir defaultdicts a dict para enviar por JSON
+    productos_por_mes = [dict(mes) for mes in product_sales_by_month]
+
+    return JsonResponse({
+        'labels': [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ],
+        'sales': sales_data,
+        'expenses': expense_data,
+        'product_sales': productos_por_mes,
+        'year': year,
+        'year_range': list(range(timezone.now().year - 4, timezone.now().year + 1)),
+    })
+#
+@login_required
+def daily_gains_data(request):
+    from calendar import monthrange
+    year = int(request.GET.get('year'))
+    month = int(request.GET.get('month'))
+
+    days_in_month = monthrange(year, month)[1]
+    sales_by_day = [0] * days_in_month
+    expenses_by_day = [0] * days_in_month
+
+    sales = Sales.objects.filter(date_added__year=year, date_added__month=month)
+    for s in sales:
+        day = s.date_added.day - 1
+        sales_by_day[day] += float(s.grand_total)
+
+    expenses = Expense.objects.filter(expense_date__year=year, expense_date__month=month)
+    for e in expenses:
+        day = e.expense_date.day - 1
+        expenses_by_day[day] += float(e.amount)
+
+    ganancias = [round(sales_by_day[i] - expenses_by_day[i], 2) for i in range(days_in_month)]
+
+    return JsonResponse({
+        'labels': list(range(1, days_in_month + 1)),
+        'gains': ganancias
+    })
+@login_required
+def product_sales_pie_data(request):
+    year = int(request.GET.get('year'))
+    month = int(request.GET.get('month'))
+
+    items_qs = salesItems.objects.select_related('sale_id', 'product_id') \
+        .filter(sale_id__date_added__year=year, sale_id__date_added__month=month)
+
+    product_totals = defaultdict(float)
+    for item in items_qs:
+        product_totals[item.product_id.name] += float(item.total)
+
+    labels = list(product_totals.keys())
+    data = list(product_totals.values())
+
+    return JsonResponse({
+        'labels': labels,
+        'data': data,
+    })
 
 
+
+
+#
 def about(request):
     context = {
         'page_title':'About',
@@ -260,21 +362,54 @@ def delete_payment(request):
 
     return HttpResponse(json.dumps(resp), content_type="application/json")
 ""
-## Cash Register
 @login_required
 def cash_register(request):
     search = request.GET.get('search', '')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    close_from = request.GET.get('close_from')
+    close_to = request.GET.get('close_to')
+    user_id = request.GET.get('user_id')
+    per_page = request.GET.get('per_page', 10)
 
-    if request.user.is_superuser:
-        color_list = CashRegister.objects.all()
-    else:
-        color_list = CashRegister.objects.filter(user=request.user)
-    # category_list = {}
+    queryset = CashRegister.objects.all()
+
+    if not request.user.is_superuser:
+        queryset = queryset.filter(user=request.user)
+
+    if search:
+        queryset = queryset.filter(user__username__icontains=search)
+
+    if date_from:
+        queryset = queryset.filter(opening_date__date__gte=date_from)
+    if date_to:
+        queryset = queryset.filter(opening_date__date__lte=date_to)
+    if close_from:
+        queryset = queryset.filter(close_date__date__gte=close_from)
+    if close_to:
+        queryset = queryset.filter(close_date__date__lte=close_to)
+    if user_id:
+        queryset = queryset.filter(user_id=user_id)
+
+    paginator = Paginator(queryset.order_by('-opening_date'), per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    filters = request.GET.copy()
+    if 'page' in filters:
+        filters.pop('page')
+    base_url = urlencode(filters)
+
+    users = User.objects.all() if request.user.is_superuser else []
+
     context = {
-        'page_title':'Lista de Cajas',
-        'payment':color_list,
+        'payment': page_obj,
+        'page_obj': page_obj,
+        'opened_today_count': CashRegister.objects.filter(user=request.user, opening_date__date=timezone.now().date()).count() if not request.user.is_superuser else 0,
+        'users': users,
+        'base_url': base_url,
     }
-    return render(request, 'posApp/cashRegister/cash_register.html',context)
+    return render(request, 'posApp/cashRegister/cash_register.html', context)
 
 @login_required
 def cash_register_detail(request, pk):
@@ -370,23 +505,24 @@ def save_cash_register(request):
 
 @login_required
 def delete_cash_register(request):
-    data = request.POST
-    resp = {'status': ''}
-    try:
-        CashRegister.objects.get(id=data['id']).delete()
-        resp['status'] = 'success'
-        messages.success(request, 'Caja Eliminada.')
+    if request.method == "POST":
+        cash_register_id = request.POST.get("id")
+        try:
+            cash_register = CashRegister.objects.get(id=cash_register_id)
 
-    except Exception as e:
-        if "restricted foreign keys" in str(e):
-            resp['status'] = 'failed'
-            resp['message'] = 'No se puede eliminar la caja seleccionada porque está relacionado con uno o más ventas.'
-        else:
-            resp['status'] = 'failed'
-            resp['message'] = f'Ocurrió un error inesperado: {str(e)}'
+            if cash_register.sales.exists():
+                return JsonResponse({
+                    "status": "failed",
+                    "message": "No se puede eliminar la caja porque tiene ventas asociadas."
+                })
 
-    return HttpResponse(json.dumps(resp), content_type="application/json")
+            cash_register.delete()
+            return JsonResponse({"status": "success"})
 
+        except CashRegister.DoesNotExist:
+            return JsonResponse({"status": "failed", "message": "Caja no encontrada."})
+
+    return JsonResponse({"status": "failed", "message": "Método no permitido."})
 
 @login_required
 def close_cash_register_modal(request):
@@ -637,39 +773,42 @@ def delete_category(request):
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
-# Products
 @login_required
 def products(request):
-    # Obtener el filtro de búsqueda y categoría
     search = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
     status_filter = request.GET.get('status', '')
-    # Filtrar productos basados en búsqueda y categoría
-    if search:
-        product_list = Products.objects.filter(name__icontains=search)
-    else:
-        product_list = Products.objects.all()
+    per_page = request.GET.get('per_page', 10)
 
+    # Filtrado
+    product_list = Products.objects.all()
+    if search:
+        product_list = product_list.filter(name__icontains=search)
     if category_filter:
         product_list = product_list.filter(category_id=category_filter)
-        
     if status_filter:
         product_list = product_list.filter(status=status_filter)
 
-    # Calcular el total de productos
     total_products = product_list.count()
 
-    # Para paginación
+    # Paginación
+    paginator = Paginator(product_list, per_page)
     page = request.GET.get('page', 1)
-    paginator = Paginator(product_list, 10)  # 10 productos por página
     products_page = paginator.get_page(page)
+
+    # Construir base_url sin el parámetro "page"
+    filters = request.GET.copy()
+    if 'page' in filters:
+        filters.pop('page')
+    base_url = urlencode(filters)
 
     context = {
         'page_title': 'Lista de Productos',
         'products': products_page,
-        'total_products': total_products,  # Añadir el total
-        'category_filter': category_filter,  # Pasar el filtro de categoría
-        'categories': Category.objects.all(),  # Si necesitas las categorías para el select
+        'total_products': total_products,
+        'category_filter': category_filter,
+        'categories': Category.objects.all(),
+        'base_url': base_url,
     }
     return render(request, 'posApp/products/products.html', context)
 

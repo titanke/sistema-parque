@@ -1,14 +1,5 @@
 {% extends "posApp/base.html" %} {% load humanize %} {% block pageContent %}
-<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
-    <div class="mdc-card">
-        <div class="d-flex justify-content-between">
-            <h4 class="card-title mb-0">Inicio</h4>
-        </div>
-    </div>
-</div>
-<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
-    <hr class="w-100">
-</div>
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
     <div class="mdc-card info-card info-card--success">
         <div class="card-inner">
@@ -59,5 +50,137 @@
         </div>
     </div>
 </div>
+
+
+      <!-- Filtros (8 columnas) -->
+      <div class="mdc-layout-grid__cell mdc-layout-grid__cell--span-8-desktop">
+        <div class="row">
+          <div class="col-md-6">
+            <label for="yearSelector">Año</label>
+            <select id="yearSelector" class="form-control">
+              {% for y in year_range %}
+                <option value="{{ y }}" {% if y == now.year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="monthSelector">Mes</label>
+            <select id="monthSelector" class="form-control">
+              {% for m in months %}
+                <option value="{{ forloop.counter }}" {% if forloop.counter == now.month %}selected{% endif %}>
+                  {{ m }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Gráfico Dona (4 columnas derecha) -->
+      <div class="mdc-layout-grid__cell mdc-layout-grid__cell--span-4-desktop">
+        <div class="card w-100 p-2 position-relative">
+          <h6 class="text-center">Productos por Tipo</h6>
+          <canvas id="productosDonaChart" height="200"></canvas>
+          <div id="totalProductos" class="position-absolute top-50 start-50 translate-middle fw-bold fs-5">
+            0
+          </div>
+        </div>
+      </div>
+  
+      <!-- Gráfico Barras (ventas mensuales) -->
+      <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop">
+        <div class="card w-100 p-2">
+          <h6 class="text-center">Ventas Mensuales</h6>
+          <canvas id="ventasMensualesChart" height="200"></canvas>
+        </div>
+      </div>
+  
+      <!-- Gráfico Línea (ganancias diarias) -->
+      <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop">
+        <div class="card w-100 p-2">
+          <h6 class="text-center">Ganancias Diarias</h6>
+          <canvas id="ventasDiariasChart" height="200"></canvas>
+        </div>
+      </div>
+
+
 {% endif %}
+
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
+
+</div>
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const yearSelect = document.getElementById('yearSelector');
+    const monthSelect = document.getElementById('monthSelector');
+  
+    const ventasMensualesChart = new Chart(document.getElementById('ventasMensualesChart'), {
+      type: 'bar',
+      data: { labels: [], datasets: [{ label: 'Ventas', data: [], backgroundColor: '#245ee3' }] },
+      options: { responsive: true }
+    });
+  
+    const ventasDiariasChart = new Chart(document.getElementById('ventasDiariasChart'), {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Ganancias', data: [], borderColor: '#00b894', fill: false }] },
+      options: { responsive: true }
+    });
+  
+    const productosDonaChart = new Chart(document.getElementById('productosDonaChart'), {
+      type: 'doughnut',
+      data: { labels: [], datasets: [{ data: [], backgroundColor: ['#ff7675', '#74b9ff', '#ffeaa7', '#55efc4'] }] },
+      options: {
+        responsive: true,
+        cutout: '70%'
+      }
+    });
+  
+    function actualizarGraficos() {
+      const year = yearSelect.value;
+      const month = monthSelect.value;
+  
+      // Gráfico de ventas mensuales
+      fetch(`dashboard/monthly-sales?year=${year}`)
+        .then(res => res.json())
+        .then(data => {
+          ventasMensualesChart.data.labels = data.labels;
+          ventasMensualesChart.data.datasets[0].data = data.sales;
+          ventasMensualesChart.update();
+        });
+  
+      // Gráfico de ganancias diarias
+      fetch(`dashboard/daily-gains?year=${year}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+          ventasDiariasChart.data.labels = data.labels;
+          ventasDiariasChart.data.datasets[0].data = data.gains;
+          ventasDiariasChart.update();
+        });
+  
+      // Gráfico de productos por tipo
+      fetch(`dashboard/product-pie?year=${year}&month=${month}`)
+        .then(res => res.json())
+        .then(data => {
+          productosDonaChart.data.labels = data.labels;
+          productosDonaChart.data.datasets[0].data = data.data;
+          productosDonaChart.update();
+          const total = data.data.reduce((a, b) => a + b, 0);
+          document.getElementById('totalProductos').textContent = total;
+        });
+    }
+  
+    // Eventos
+    yearSelect.addEventListener('change', actualizarGraficos);
+    monthSelect.addEventListener('change', actualizarGraficos);
+  
+    // Cargar al inicio
+    document.addEventListener('DOMContentLoaded', actualizarGraficos);
+  </script>
+  
+
 {% endblock pageContent %}

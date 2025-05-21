@@ -194,6 +194,7 @@
         </button>
     </div>
 </div>
+
 <script>
     $(function () {
         $('#receipt_print').click(function () {
@@ -203,6 +204,11 @@
                 return;
             }
 
+            // Calcula el alto en milímetros basado en el alto del contenido
+            const pxHeight = element.offsetHeight;
+            const mmPerPx = 0.264583;
+            const mmHeight = pxHeight * mmPerPx;
+
             const opt = {
                 margin: 0,
                 filename: 'ticket.pdf',
@@ -210,12 +216,17 @@
                 html2canvas: { scale: 2 },
                 jsPDF: {
                     unit: 'mm',
-                    format: [80, 297],
+                    format: [80, mmHeight],
                     orientation: 'portrait'
                 }
             };
 
-            html2pdf().set(opt).from(element).save();
+            html2pdf().set(opt).from(element).output('blob').then(function (pdfBlob) {
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                window.open(blobUrl, '_blank');
+            }).catch(function (error) {
+                console.error('❌ Error al generar el PDF:', error);
+            });
         });
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';

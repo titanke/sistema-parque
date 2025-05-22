@@ -231,7 +231,14 @@
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
         if (autoPrint) {
-            $('#receipt_print').trigger('click');
+            setTimeout(() => {
+                const logo = document.querySelector('#outprint img');
+                if (logo && !logo.complete) {
+                    logo.onload = () => $('#receipt_print').trigger('click');
+                } else {
+                    $('#receipt_print').trigger('click');
+                }
+            }, 300); // Ajusta si es necesario
         }
     });
 </script>

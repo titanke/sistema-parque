@@ -13,10 +13,9 @@
         #outprint {
             width: 80mm;
             max-width: 80mm;
-            padding: 5mm;
             font-size: 11px;
         }
-
+        
         .modal-footer,
         .btn,
         #receipt_print {
@@ -98,7 +97,7 @@
 </style>
 
 <div class="container-fluid">
-    <div id="outprint" style="max-width: 300px; margin: 0 auto; padding: 10px; font-size: 11px; font-family: monospace;">
+    <div id="outprint" style="max-width: 300px; margin: 0 auto; padding: 8px; font-size: 11px; font-family: monospace;">
         <div class="text-center mb-2">
             <img src="media/products/logo.png" alt="Logo" style="width: 120px; height: auto; margin-bottom: 5px;">
             <div class="fw-bold text-uppercase">Parque de Aventuras Santo Domingo</div>
@@ -204,7 +203,19 @@
                 return;
             }
 
-            // Calcula el alto en milímetros basado en el alto del contenido
+            // Guardar estilos originales
+            const originalPadding = element.style.padding;
+            const originalWidth = element.style.width;
+            const originalMaxWidth = element.style.maxWidth;
+
+            // Ajustar padding solo para el PDF
+            element.style.padding = '0 2mm'; // 5mm izquierda y derecha
+            element.style.width = '80mm';    // ancho fijo
+            element.style.maxWidth = '80mm';
+
+            // Forzar reflow
+            void element.offsetHeight;
+
             const pxHeight = element.offsetHeight;
             const mmPerPx = 0.264583;
             const mmHeight = pxHeight * mmPerPx;
@@ -213,7 +224,12 @@
                 margin: 0,
                 filename: 'ticket.pdf',
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    scrollY: 0,
+                    windowWidth: document.documentElement.offsetWidth
+                },
                 jsPDF: {
                     unit: 'mm',
                     format: [80, mmHeight],
@@ -224,8 +240,12 @@
             html2pdf().set(opt).from(element).output('blob').then(function (pdfBlob) {
                 const blobUrl = URL.createObjectURL(pdfBlob);
                 window.open(blobUrl, '_blank');
+
+                // Restaurar estilos originales
+
             }).catch(function (error) {
                 console.error('❌ Error al generar el PDF:', error);
+       
             });
         });
 
@@ -238,7 +258,7 @@
                 } else {
                     $('#receipt_print').trigger('click');
                 }
-            }, 300); // Ajusta si es necesario
+            }, 300);
         }
     });
 </script>

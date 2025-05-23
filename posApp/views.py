@@ -1,9 +1,11 @@
-from datetime import datetime
+from datetime import datetime, date
+from calendar import monthrange
 from urllib.parse import urlencode
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from pickle import FALSE
 from django.db.models import F, Sum
+from django.utils.timezone import now
 from collections import defaultdict
 
 from django.shortcuts import get_object_or_404, redirect, render
@@ -139,7 +141,6 @@ def monthly_sales_data(request):
 #
 @login_required
 def daily_gains_data(request):
-    from calendar import monthrange
     year = int(request.GET.get('year'))
     month = int(request.GET.get('month'))
 
@@ -364,50 +365,104 @@ def delete_payment(request):
 ""
 @login_required
 def cash_register(request):
-    search = request.GET.get('search', '')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    close_from = request.GET.get('close_from')
-    close_to = request.GET.get('close_to')
+    # Parámetros del request
+    opening_date_start = request.GET.get('opening_date_start')
+    opening_date_end = request.GET.get('opening_date_end')
     user_id = request.GET.get('user_id')
     per_page = request.GET.get('per_page', 10)
 
-    queryset = CashRegister.objects.all()
+    # Años y meses disponibles para filtro
+    available_years = list(range(2022, datetime.now().year + 1))
+    months = list(range(1, 13))
 
+    # Mes y año seleccionados (por defecto actual)
+    month = int(request.GET.get('month', now().month))
+    year = int(request.GET.get('year', now().year))
+
+    queryset = CashRegister.objects.all().select_related('user')
+
+    # Si no es superusuario, filtrar solo sus cajas
     if not request.user.is_superuser:
         queryset = queryset.filter(user=request.user)
 
-    if search:
-        queryset = queryset.filter(user__username__icontains=search)
+    # Filtrar por fecha de apertura
+    if opening_date_start:
+        queryset = queryset.filter(opening_date__date__gte=opening_date_start)
+    else:
+        start_of_month = date(year, month, 1)
+        end_of_month = date(year, month, monthrange(year, month)[1])
+        queryset = queryset.filter(opening_date__date__range=(start_of_month, end_of_month))
 
-    if date_from:
-        queryset = queryset.filter(opening_date__date__gte=date_from)
-    if date_to:
-        queryset = queryset.filter(opening_date__date__lte=date_to)
-    if close_from:
-        queryset = queryset.filter(close_date__date__gte=close_from)
-    if close_to:
-        queryset = queryset.filter(close_date__date__lte=close_to)
+    # Filtrar por fecha de cierre
+    if opening_date_end:
+        queryset = queryset.filter(opening_date__date__lte=opening_date_end)
+
+    # Filtrar por usuario si se envía
     if user_id:
         queryset = queryset.filter(user_id=user_id)
 
+    # Paginación
     paginator = Paginator(queryset.order_by('-opening_date'), per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    filters = request.GET.copy()
-    if 'page' in filters:
-        filters.pop('page')
-    base_url = urlencode(filters)
+    # Fechas para totales mensuales
+    start_of_month = date(year, month, 1)
+    end_of_month = date(year, month, monthrange(year, month)[1])
+
+    total_ingresos_mes = Sales.objects.filter(
+        date_added__date__range=(start_of_month, end_of_month)
+    ).aggregate(total=Sum('grand_total'))['total'] or 0
+
+    total_egresos_mes = Expense.objects.filter(
+        expense_date__date__range=(start_of_month, end_of_month)
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    # Mes anterior
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+    prev_start = date(prev_year, prev_month, 1)
+    prev_end = date(prev_year, prev_month, monthrange(prev_year, prev_month)[1])
+
+    ventas_mes_anterior = Sales.objects.filter(
+        date_added__date__range=(prev_start, prev_end)
+    ).aggregate(total=Sum('grand_total'))['total'] or 0
+
+    egresos_mes_anterior = Expense.objects.filter(
+        expense_date__date__range=(prev_start, prev_end)
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    saldo_mes_anterior = ventas_mes_anterior - egresos_mes_anterior
+    flujo_acumulado_neto = saldo_mes_anterior + total_ingresos_mes - total_egresos_mes
+
+    # Enriquecer cada caja con sus indicadores
+    for caja in page_obj:
+        ventas = caja.sales.aggregate(total=Sum('grand_total'))['total'] or 0
+        egresos = caja.expenses.aggregate(total=Sum('amount'))['total'] or 0
+        caja.ventas_total = ventas
+        caja.egresos_total = egresos
+        caja.neto = ventas - egresos
 
     users = User.objects.all() if request.user.is_superuser else []
 
     context = {
         'payment': page_obj,
         'page_obj': page_obj,
-        'opened_today_count': CashRegister.objects.filter(user=request.user, opening_date__date=timezone.now().date()).count() if not request.user.is_superuser else 0,
+        'available_years': available_years,
+        'months': months,
         'users': users,
-        'base_url': base_url,
+        'base_url': urlencode({k: v for k, v in request.GET.items() if k != 'page'}),
+        'saldo_mes_anterior': saldo_mes_anterior,
+        'total_ingresos_mes': total_ingresos_mes,
+        'total_egresos_mes': total_egresos_mes,
+        'flujo_acumulado_neto': flujo_acumulado_neto,
+        'month': month,
+        'year': year,
+        'request_get': request.GET,
     }
     return render(request, 'posApp/cashRegister/cash_register.html', context)
 
@@ -1204,7 +1259,7 @@ def clean_get_params(params):
 @login_required
 def salesList(request):
     search_query = request.GET.get('search', '')
-    date_from = request.GET.get('date_from') or datetime.now().date().strftime('%Y-%m-%d')
+    date_from = request.GET.get('date_from', '') 
     date_to = request.GET.get('date_to', '')
     payment_type_id = request.GET.get('payment_type_id', '')
     user_id = request.GET.get('user_id', '')

@@ -35,7 +35,7 @@
                     <div class="row">
                         <div class="col-6">
                           <div class="form-floating form-floating-sm">
-                            <input type="date" id="date_from" name="date_from" class="form-control" placeholder="Desde" value="{{ date_from|default:today }}">
+                            <input type="date" id="date_from" name="date_from" class="form-control" placeholder="Desde" value="{{ date_from|default:'' }}">
                             <label for="date_from">Desde</label>
                           </div>
                         </div>
@@ -166,7 +166,6 @@
                     <form method="get" class="d-flex align-items-center me-2">
                         <!-- Mantén los filtros existentes -->
                         <input type="hidden" name="search" value="{{ request.GET.search }}">
-                        <input type="hidden" name="date_from" value="{{ request.GET.date_from }}">
                         <input type="hidden" name="payment_type_id" value="{{ request.GET.payment_type_id }}">
         
                         <label for="per_page" class="me-1 mb-0">Mostrar</label>

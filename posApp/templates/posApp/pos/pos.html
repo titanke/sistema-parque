@@ -415,7 +415,7 @@
           qty = $(this).find('[name="qty[]"]').val();
           qty = qty > 0 ? qty : 0;
           total = parseFloat(price) * parseFloat(qty);
-          $(this).find('.product_total').text(parseFloat(total).toLocaleString('en-US'));
+          $(this).find('.product_total').text(parseFloat(total));
           sub_total += parseFloat(total);
         });
       
@@ -432,20 +432,20 @@
 
       
 
-        $('#sub_total').text(parseFloat(sub_total).toLocaleString('en-US'));
+        $('#sub_total').text(parseFloat(sub_total));
         $('[name="sub_total"]').val(parseFloat(sub_total));
 
-        $('#descuento').text(parseFloat(descuento).toLocaleString('en-US')); // Add display for discount amount (optional)
+        $('#descuento').text(parseFloat(descuento)); // Add display for discount amount (optional)
         $('[name="descuento"]').val(parseFloat(descuento)); // Add input for discount amount (optional)
       
-        $('#tax_amount').text(parseFloat(tax_amount).toLocaleString('en-US'));
+        $('#tax_amount').text(parseFloat(tax_amount));
         $('[name="tax_amount"]').val(parseFloat(tax_amount));
         //grand_total = sub_total - descuento;
         // Update grand total including tax and minus discount
 
         grand_total = sub_total + tax_amount - descuento;
-        $('#grand_total').text(parseFloat(grand_total).toLocaleString('en-US'));
-        $('[name="grand_total"]').val(parseFloat(grand_total).toLocaleString('en-US'));
+        $('#grand_total').text(parseFloat(grand_total));
+        $('[name="grand_total"]').val(parseFloat(grand_total));
         
       }
 
@@ -524,8 +524,8 @@
                 if (feature_id && feature.color) productName += " - Color: " + feature.color;
         
                 tr.find('.product_name').text(productName)
-                tr.find('.product_price').text(parseFloat(data.price).toLocaleString('en-US'))
-                tr.find('.product_total').text(parseFloat(data.price * qty).toLocaleString('en-US'))
+                tr.find('.product_price').text(parseFloat(data.price))
+                tr.find('.product_total').text(parseFloat(data.price * qty))
                 $('#POS-field table tbody').append(tr)
                 $('#product-id').val('').trigger('change')
                 $('#product-qty').val(1)

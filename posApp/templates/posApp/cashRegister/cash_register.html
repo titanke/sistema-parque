@@ -15,32 +15,87 @@
     }
 </style>
 
-
-<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
-    <div class="mdc-card py-2">
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 class="card-title mb-0">Cajas</h4>
-            <div class="text-start">
-                {% if request.user.is_superuser or opened_today_count == 0 %}
-                    <button class="btn btn-primary bg-gradient btn-sm rounded-0" id="create_new">
-                        <i class="mdi mdi-plus"></i><span> Agregar nuevo</span>
-                    </button>
-                {% else %}
-                    <button class="btn btn-secondary bg-gradient btn-sm rounded-0" disabled>
-                        <i class="mdi mdi-lock"></i><span> Ya abriste una caja hoy</span>
-                    </button>
-                {% endif %}
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-card info-card info-card--success">
+        <div class="card-inner">
+            <h5 class="card-title">Saldo Acumulado Mes Anterior</h5>
+              <h5 class="font-weight-light pb-2 mb-1 border-bottom">
+                {{ saldo_mes_anterior|floatformat:2 }} 
+              </h5>            
+              <p class="tx-12 text-muted">Recuento de categorias</p>
+            <div class="card-icon-wrapper">
+                <i class="material-icons">list</i>
             </div>
-            
         </div>
     </div>
 </div>
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-card info-card info-card--primary">
+        <div class="card-inner">
+            <h5 class="card-title">Total Ingresos Mes</h5>
+            <h5 class="font-weight-light pb-2 mb-1 border-bottom">
+                {{ total_ingresos_mes|floatformat:2 }} <!-- Ingresos mes actual -->
+            </h5>            
+            <p class="tx-12 text-muted">Recuento de productos</p>
+            <div class="card-icon-wrapper">
+                <i class="material-icons">label</i>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-card info-card info-card--primary">
+        <div class="card-inner">
+            <h5 class="card-title">Total Egresos Mes</h5>
+            <h5 class="font-weight-light pb-2 mb-1 border-bottom">
+                {{ total_egresos_mes|floatformat:2 }} <!-- Egresos mes actual -->
+            </h5>            
+            <p class="tx-12 text-muted">Recuento de productos</p>
+            <div class="card-icon-wrapper">
+                <i class="material-icons">label</i>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-card info-card info-card--primary">
+        <div class="card-inner">
+            <h5 class="card-title">Flujo Acumulado Neto</h5>
+            <h5 class="font-weight-light pb-2 mb-1 border-bottom">
+                {{ flujo_acumulado_neto|floatformat:2 }} <!-- Flujo neto -->
+            </h5>            
+            <p class="tx-12 text-muted">Recuento de productos</p>
+            <div class="card-icon-wrapper">
+                <i class="material-icons">label</i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card">
-        <div class="row mb-3">
+        <div class="row">
             <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">Cajas</h4>
+                    <div class="text-end mb-2">
+                        {% if request.user.is_superuser or opened_today_count == 0 %}
+                            <button id="create_new" class="btn btn-success bg-gradient btn-sm rounded-0">
+                                <i class="mdi mdi-plus"></i><span> Abrir caja</span>
+                            </button>
+                        {% else %}
+                            <button class="btn btn-secondary bg-gradient btn-sm rounded-0" disabled>
+                                <i class="mdi mdi-lock"></i><span> Ya abriste una caja hoy</span>
+                            </button>
+                        {% endif %}
+                      </div>
+                </div>
                 <form method="get" action="">
-                    <div class="row mb-3">
+                    <div class="row">
                           <div class="col-md-6 col-lg-2 mb-2">
                             <div class="form-floating form-floating-sm">
                               <input type="date" name="opening_date_start" id="opening_date_start" value="{{ request_get.opening_date_start }}" class="form-control" placeholder="Desde apertura">
@@ -54,24 +109,35 @@
                               <label for="opening_date_end">Hasta apertura</label>
                             </div>
                           </div>
-                          
                           <div class="col-md-6 col-lg-2 mb-2">
-                            <div class="form-floating form-floating-sm">
-                              <input type="date" name="close_date_start" id="close_date_start" value="{{ request_get.close_date_start }}" class="form-control" placeholder="Desde cierre">
-                              <label for="close_date_start">Desde cierre</label>
-                            </div>
+                            <select name="year" id="year" class="form-select">
+                                {% for y in available_years %}
+                                  <option value="{{ y }}"
+                                    {% if request_get.year %}
+                                      {% if request_get.year == y|stringformat:"s" %}selected{% endif %}
+                                    {% elif year == y %}selected{% endif %}
+                                  >{{ y }}</option>
+                                {% endfor %}
+                              </select>
+                            
                           </div>
                           
                           <div class="col-md-6 col-lg-2 mb-2">
-                            <div class="form-floating form-floating-sm">
-                              <input type="date" name="close_date_end" id="close_date_end" value="{{ request_get.close_date_end }}" class="form-control" placeholder="Hasta cierre">
-                              <label for="close_date_end">Hasta cierre</label>
-                            </div>
+                            <select name="month" id="month" class="form-select">
+                                {% for m in months %}
+                                  <option value="{{ m }}"
+                                    {% if request_get.month %}
+                                      {% if request_get.month == m|stringformat:"s" %}selected{% endif %}
+                                    {% elif month == m %}selected{% endif %}
+                                  >{{ m|stringformat:"02d" }}</option>
+                                {% endfor %}
+                              </select>
                           </div>
+                          
                       {% if request.user.is_superuser %}
                       <div class="col-md-6 col-lg-2 mb-2">
                         <select name="user_id" class="form-select">
-                          <option value="">Todos los usuarios</option>
+                          <option value="">Usuarios</option>
                           {% for u in users %}
                             <option value="{{ u.id }}" {% if request_get.user_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
                           {% endfor %}
@@ -89,8 +155,7 @@
                         </div>
                       </div>
                     </div>
-                  </form>
-                  
+                </form>
             </div>
         </div>
         <div class="table-responsive">
@@ -111,6 +176,9 @@
                         <th class="text-center py-1">Usuario</th>
                         <th class="text-center py-1">Fecha de Apertura</th>
                         <th class="text-center py-1">Fecha de Cierre</th>
+                        <th class="text-center py-1">Ventas Totales</th>
+                        <th class="text-center py-1">Gastos Totales</th>
+                        <th class="text-center py-1">Neto</th>
                         <th class="text-center py-1">Accion</th>
                     </tr>
                 </thead>
@@ -132,7 +200,10 @@
                             {% else %}
                                 Sin cerrar
                             {% endif %}
-                        </td>                 
+                        </td>           
+                        <td class="text-center py-1">{{ cat.ventas_total|floatformat:2 }}</td>
+                        <td class="text-center py-1">{{ cat.egresos_total|floatformat:2 }}</td>
+                        <td class="text-center py-1">{{ cat.neto|floatformat:2 }}</td>  
                         <td class="px-2 py-1 text-center">
                             {% if request.user.is_superuser %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ cat.pk }}" title="Edit">

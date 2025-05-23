@@ -44,7 +44,7 @@
     <div class="mdc-card info-card info-card--warning">
         <div class="card-inner">
             <h5 class="card-title">Ventas de hoy</h5>
-            <h5 class="font-weight-light pb-2 mb-1 border-bottom">{{ total_sales|intcomma }}</h5>
+            <h5 class="font-weight-light pb-2 mb-1 border-bottom">S/ {{ total_sales|intcomma }}</h5>
             <p class="tx-12 text-muted">Total</p>
             <div class="card-icon-wrapper">
                 <i class="mdi mdi-cash-multiple"></i>
@@ -63,7 +63,7 @@
       <!-- Gráfico de barras -->
       <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop">
         <div class="card w-100 p-2">
-          <h6 class="text-center">Ventas Mensuales</h6>
+          <h6 class="text-center">Ingresos Netos Mensuales</h6>
           <label for="yearSelector">Año</label>
           <select id="yearSelector" class="form-control">
             {% for y in year_range  %}
@@ -77,7 +77,7 @@
       <!-- Gráfico de líneas -->
       <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-4-desktop">
         <div class="card w-100 p-2">
-          <h6 class="text-center">Ventas Diarias</h6>
+          <h6 class="text-center">Ingresos Netos Diarios</h6>
           <label for="monthSelector">Mes</label>
           <select id="monthSelector" class="form-control">
             {% for m in months %}
@@ -118,41 +118,105 @@
     const monthSelect = document.getElementById('monthSelector');
   
     const ventasMensualesChart = new Chart(document.getElementById('ventasMensualesChart'), {
-        type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Ventas', data: [], backgroundColor: '#245ee3' }] },
-        options: { 
-            responsive: true,
-            aspectRatio: 1.2,
-            scales: {
-                y: {
-                    ticks: {
-                    callback: function(value) {
+      type: 'bar',
+      data: {
+          labels: [], // Esto se rellena luego con data.labels
+          datasets: [
+              {
+                  label: 'Ingresos',
+                  data: [],
+                  backgroundColor: '#245ee3'
+              },
+              {
+                  label: 'Gastos',
+                  data: [],
+                  backgroundColor: '#e74c3c'
+              },
+              {
+                  label: 'Saldo',
+                  data: [],
+                  backgroundColor: '#2ecc71'
+              }
+          ]
+      },
+      options: {
+          responsive: true,
+          aspectRatio: 1.2,
+          scales: {
+              x: {
+                  stacked: false, // si lo quieres agrupado
+              },
+              y: {
+                  beginAtZero: true,
+                  ticks: {
+                      callback: function(value) {
+                          return 'S/. ' + value.toLocaleString('es-PE');
+                      }
+                  }
+              }
+          },
+          plugins: {
+              legend: {
+                  position: 'top',
+              }
+          }
+      }
+  });
+  
+
+  const ventasDiariasChart = new Chart(document.getElementById('ventasDiariasChart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            {
+                label: 'Ventas',
+                data: [],
+                borderColor: '#4CAF50',
+                backgroundColor: 'transparent',
+                tension: 0.3
+            },
+            {
+                label: 'Gastos',
+                data: [],
+                borderColor: '#E74C3C',
+                backgroundColor: 'transparent',
+                tension: 0.3
+            },
+            {
+                label: 'Saldo Neto',
+                data: [],
+                borderColor: '#3498DB',
+                backgroundColor: 'transparent',
+                tension: 0.3
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        aspectRatio: 1.2,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Ventas, Gastos y Saldos por Día'
+            },
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function (value) {
                         return 'S/. ' + value.toLocaleString('es-PE');
-                    }
                     }
                 }
             }
         }
-    });
-    
-
-    const ventasDiariasChart = new Chart(document.getElementById('ventasDiariasChart'), {
-      type: 'line',
-      data: { labels: [], datasets: [{ label: 'Ganancias', data: [], borderColor: '#00b894', fill: false }] },
-      options: { 
-        responsive: true,
-        aspectRatio: 1.2,
-        scales: {
-            y: {
-                ticks: {
-                callback: function(value) {
-                    return 'S/. ' + value.toLocaleString('es-PE');
-                }
-                }
-            }
-        } 
     }
-    });
+});
+
   
     const productosDonaChart = new Chart(document.getElementById('productosDonaChart'), {
       type: 'doughnut',
@@ -172,19 +236,27 @@
       fechaSpan.textContent = `Productos por Tipo: ${year}/${month}`;
       // Gráfico de ventas mensuales
       fetch(`dashboard/monthly-sales?year=${year}`)
-        .then(res => res.json())
-        .then(data => {
+      .then(res => res.json())
+      .then(data => {
           ventasMensualesChart.data.labels = data.labels;
+  
+          // Asegúrate de limpiar y setear correctamente los datos
           ventasMensualesChart.data.datasets[0].data = data.sales;
+          ventasMensualesChart.data.datasets[1].data = data.expenses;
+          ventasMensualesChart.data.datasets[2].data = data.saldo;
+          console.log(data);
+
           ventasMensualesChart.update();
-        });
+      });
   
       // Gráfico de ganancias diarias
       fetch(`dashboard/daily-gains?year=${year}&month=${month}`)
         .then(res => res.json())
         .then(data => {
           ventasDiariasChart.data.labels = data.labels;
-          ventasDiariasChart.data.datasets[0].data = data.gains;
+          ventasDiariasChart.data.datasets[0].data = data.sales;
+          ventasDiariasChart.data.datasets[1].data = data.expenses;
+          ventasDiariasChart.data.datasets[2].data = data.saldo;
           ventasDiariasChart.update();
         });
   

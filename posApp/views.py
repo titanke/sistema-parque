@@ -96,7 +96,7 @@ def home(request):
 @login_required
 def monthly_sales_data(request):
     from datetime import datetime
-    from .models import salesItems, Expense  # Ajusta si tu modelo está en otro archivo
+    from .models import salesItems, Expense  
     year = int(request.GET.get('year', datetime.now().year))
     category_id = request.GET.get('category_id', None)
 
@@ -126,6 +126,7 @@ def monthly_sales_data(request):
 
     # Convertir defaultdicts a dict para enviar por JSON
     productos_por_mes = [dict(mes) for mes in product_sales_by_month]
+    saldo_data = [ventas - gastos for ventas, gastos in zip(sales_data, expense_data)]
 
     return JsonResponse({
         'labels': [
@@ -134,10 +135,12 @@ def monthly_sales_data(request):
         ],
         'sales': sales_data,
         'expenses': expense_data,
+        'saldo': saldo_data,
         'product_sales': productos_por_mes,
         'year': year,
         'year_range': list(range(timezone.now().year - 4, timezone.now().year + 1)),
     })
+
 #
 @login_required
 def daily_gains_data(request):
@@ -158,12 +161,15 @@ def daily_gains_data(request):
         day = e.expense_date.day - 1
         expenses_by_day[day] += float(e.amount)
 
-    ganancias = [round(sales_by_day[i] - expenses_by_day[i], 2) for i in range(days_in_month)]
+    saldo_by_day = [round(sales_by_day[i] - expenses_by_day[i], 2) for i in range(days_in_month)]
 
     return JsonResponse({
         'labels': list(range(1, days_in_month + 1)),
-        'gains': ganancias
+        'sales': sales_by_day,
+        'expenses': expenses_by_day,
+        'saldo': saldo_by_day
     })
+    
 @login_required
 def product_sales_pie_data(request):
     year = int(request.GET.get('year'))
@@ -363,6 +369,47 @@ def delete_payment(request):
 
     return HttpResponse(json.dumps(resp), content_type="application/json")
 ""
+
+
+def calcular_ingresos_netos_por_tipo(start_date, end_date):
+    pagos = SalesPayment.objects.filter(
+        sale__date_added__date__range=(start_date, end_date)
+    ).select_related('sale', 'payment_type')
+
+    ingresos_por_tipo = defaultdict(float)
+
+    # Agrupar pagos por venta
+    pagos_por_venta = defaultdict(list)
+    for pago in pagos:
+        pagos_por_venta[pago.sale_id].append(pago)
+
+    for pagos_venta in pagos_por_venta.values():
+        if not pagos_venta:
+            continue
+
+        # Vuelto de la venta
+        venta = pagos_venta[0].sale
+        vuelto = venta.amount_change or 0
+
+        if len(pagos_venta) == 1:
+            # Solo un método de pago: se le resta el vuelto directamente
+            pago = pagos_venta[0]
+            neto = max(pago.amount - vuelto, 0)
+            ingresos_por_tipo[pago.payment_type.name] += neto
+        else:
+            # Varios métodos de pago: se resta el vuelto al mayor
+            pagos_venta.sort(key=lambda x: x.amount, reverse=True)
+            mayor = pagos_venta[0]
+            neto_mayor = max(mayor.amount - vuelto, 0)
+            ingresos_por_tipo[mayor.payment_type.name] += neto_mayor
+
+            for pago in pagos_venta[1:]:
+                ingresos_por_tipo[pago.payment_type.name] += pago.amount
+
+    return ingresos_por_tipo
+
+
+
 @login_required
 def cash_register(request):
     # Parámetros del request
@@ -406,10 +453,11 @@ def cash_register(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Fechas para totales mensuales
+    # Rango actual del mes seleccionado
     start_of_month = date(year, month, 1)
     end_of_month = date(year, month, monthrange(year, month)[1])
 
+    # Totales del mes actual
     total_ingresos_mes = Sales.objects.filter(
         date_added__date__range=(start_of_month, end_of_month)
     ).aggregate(total=Sum('grand_total'))['total'] or 0
@@ -418,26 +466,30 @@ def cash_register(request):
         expense_date__date__range=(start_of_month, end_of_month)
     ).aggregate(total=Sum('amount'))['total'] or 0
 
-    # Mes anterior
+    # Obtener el fin del mes anterior
     if month == 1:
         prev_month = 12
         prev_year = year - 1
     else:
         prev_month = month - 1
         prev_year = year
-    prev_start = date(prev_year, prev_month, 1)
     prev_end = date(prev_year, prev_month, monthrange(prev_year, prev_month)[1])
 
-    ventas_mes_anterior = Sales.objects.filter(
-        date_added__date__range=(prev_start, prev_end)
+    # Acumulado hasta el fin del mes anterior
+    ventas_acumuladas = Sales.objects.filter(
+        date_added__date__lte=prev_end
     ).aggregate(total=Sum('grand_total'))['total'] or 0
 
-    egresos_mes_anterior = Expense.objects.filter(
-        expense_date__date__range=(prev_start, prev_end)
+    egresos_acumulados = Expense.objects.filter(
+        expense_date__date__lte=prev_end
     ).aggregate(total=Sum('amount'))['total'] or 0
 
-    saldo_mes_anterior = ventas_mes_anterior - egresos_mes_anterior
-    flujo_acumulado_neto = saldo_mes_anterior + total_ingresos_mes - total_egresos_mes
+    saldo_acumulado_hasta_mes_anterior = ventas_acumuladas - egresos_acumulados
+    flujo_acumulado_neto = saldo_acumulado_hasta_mes_anterior + total_ingresos_mes - total_egresos_mes
+
+    ingresos_por_tipo_mes = calcular_ingresos_netos_por_tipo(start_of_month, end_of_month)
+    ingresos_por_tipo_acumulado = calcular_ingresos_netos_por_tipo(date.min, prev_end)
+
 
     # Enriquecer cada caja con sus indicadores
     for caja in page_obj:
@@ -456,7 +508,10 @@ def cash_register(request):
         'months': months,
         'users': users,
         'base_url': urlencode({k: v for k, v in request.GET.items() if k != 'page'}),
-        'saldo_mes_anterior': saldo_mes_anterior,
+        'saldo_mes_anterior': saldo_acumulado_hasta_mes_anterior,
+        'ingresos_por_tipo_mes': ingresos_por_tipo_mes.items(),
+        'ingresos_por_tipo_acumulado': ingresos_por_tipo_acumulado.items(),
+        'egresos_acumulados': egresos_acumulados, 
         'total_ingresos_mes': total_ingresos_mes,
         'total_egresos_mes': total_egresos_mes,
         'flujo_acumulado_neto': flujo_acumulado_neto,
@@ -466,21 +521,30 @@ def cash_register(request):
     }
     return render(request, 'posApp/cashRegister/cash_register.html', context)
 
+
 @login_required
 def cash_register_detail(request, pk):
     cash_register = get_object_or_404(CashRegister, pk=pk)
     expenses = cash_register.expenses.all()
     cash_register_sales = CashRegisterSales.objects.filter(cash_register=cash_register)
     sales = [crs.sale for crs in cash_register_sales]
+
     expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
-    # suma de ingresos (grand_total de cada venta)
     income_total = sum(s.grand_total for s in sales)
-
-    # monto inicial (asumo que lo guardas en un campo llamado initial_amount)
     initial = cash_register.opening_amount or 0
-
-    # monto final = inicial + ingresos – gastos
     final_total = initial + income_total - expense_total
+
+    # === Ingresos por nombre de producto ===
+    ingresos_por_producto = (
+        salesItems.objects
+        .filter(sale_id__in=sales)
+        .values(nombre=F('product_id__name'))  # agrupamos por nombre del producto
+        .annotate(
+            total_monto=Sum('total'),
+            total_cantidad=Sum('qty')
+        )
+        .order_by('-total_monto')
+    )
 
     context = {
         'cash_register': cash_register,
@@ -490,6 +554,7 @@ def cash_register_detail(request, pk):
         'income_total': income_total,
         'expense_total': expense_total,
         'final_total': final_total,
+        'ingresos_por_producto': ingresos_por_producto,
     }
     return render(request, 'posApp/cashRegister/cash_register_detail.html', context)
 
@@ -1062,16 +1127,26 @@ def delete_product(request):
         
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
+#Solo Deja registrar si la caja esta abierta y si la fecha de apertura es la fecha actual 
 @login_required
 def pos(request):
     products = Products.objects.filter(status=1)
+    
+    today = now().date()  
     if request.user.is_superuser:
-        cash_register = CashRegister.objects.filter(close_date__isnull=True)
+        cash_register = CashRegister.objects.filter(
+            close_date__isnull=True,
+            opening_date__date=today
+        )
     else:
-        cash_register = CashRegister.objects.filter(close_date__isnull=True, user=request.user)
-    payment = PaymentType.objects.all()
+        cash_register = CashRegister.objects.filter(
+            close_date__isnull=True,
+            user=request.user,
+            opening_date__date=today
+        )
 
-    mostrar_modal = not cash_register.exists()  # True si no hay caja abierta
+    payment = PaymentType.objects.all()
+    mostrar_modal = not cash_register.exists()  
 
     product_json = []
     for product in products:
@@ -1366,6 +1441,7 @@ def receipt(request):
     id = request.GET.get('id')
     sales = Sales.objects.filter(id=id).first()
     print_ticket = request.GET.get('print_ticket') == '1'
+    logo_url = request.build_absolute_uri('/media/products/logo.png')
 
     transaction = {}
     for field in Sales._meta.get_fields():
@@ -1380,6 +1456,7 @@ def receipt(request):
     salesPayments = SalesPayment.objects.filter(sale=sales)
 
     context = {
+        'logo_url': logo_url,
         "transaction": transaction,
         "salesItems": ItemList,
         "salesPayments": salesPayments,

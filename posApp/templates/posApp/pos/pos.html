@@ -176,7 +176,7 @@
                             <input type="hidden" name="amount_change" value="0">
                             <input type="hidden" name="grand_total" value="0">
                             <input type="hidden" name="tax_amount" value="0">
-                            <span class="h6 ">Total: </span>
+                            <span class="h6 ">Total: S/ </span>
                             <span class="h4 fw-bold" id="grand_total">0.00</span>
                         </div>
                   </div>
@@ -242,7 +242,7 @@
             <input type="hidden" name="price[]">
             <input type="hidden" name="feature_id[]"> <!-- Asegúrate de incluir este campo -->
 
-            <input type="number" name="qty[]" min="0" class="form-control form-control-sm rounded-0 text-center">
+            <input type="number" name="qty[]" min="1" class="form-control form-control-sm rounded-0 text-center">
         </td>
         <td class="px-2 py-1 product_name text-start"></td>
         <td class="px-2 py-1 product_price text-end"></td>
@@ -404,7 +404,23 @@
         });
     });
     
-    
+    function calcularVuelto() {
+      const total = parseFloat($('#grand_total').text()) || 0;
+      let totalPagado = 0;
+  
+      $('.tendered-amount').each(function () {
+        const amount = parseFloat($(this).val()) || 0;
+        totalPagado += amount;
+      });
+  
+      const change = totalPagado - total;
+  
+      // Mostrar en campos ocultos si es necesario
+      $('[name="tendered_amount"]').val(totalPagado.toFixed(2));
+      $('[name="amount_change"]').val(change.toFixed(2));
+      $('#payment_change').val(change.toFixed(2)); // este es visible en el formulario
+    }
+  
 
     function calc() {
         var sub_total = 0;
@@ -415,7 +431,7 @@
           qty = $(this).find('[name="qty[]"]').val();
           qty = qty > 0 ? qty : 0;
           total = parseFloat(price) * parseFloat(qty);
-          $(this).find('.product_total').text(parseFloat(total));
+          $(this).find('.product_total').text("S/ "+ parseFloat(total));
           sub_total += parseFloat(total);
         });
       
@@ -485,6 +501,12 @@
                 return false
             }
 
+             
+            if (qty == 0) {
+              alert("Cantidad no permitida")
+              return false
+            }
+
             if (feature_id == '') {
                 alert("Debe seleccionar una característica del producto antes de agregarlo");
                 return false;
@@ -524,8 +546,8 @@
                 if (feature_id && feature.color) productName += " - Color: " + feature.color;
         
                 tr.find('.product_name').text(productName)
-                tr.find('.product_price').text(parseFloat(data.price))
-                tr.find('.product_total').text(parseFloat(data.price * qty))
+                tr.find('.product_price').text("S/ "+ parseFloat(data.price))
+                tr.find('.product_total').text("S/ "+ parseFloat(data.price * qty))
                 $('#POS-field table tbody').append(tr)
                 $('#product-id').val('').trigger('change')
                 $('#product-qty').val(1)
@@ -536,6 +558,7 @@
                         $(this).val(maxQty); // Limitar la cantidad a la disponible
                         alert(`No puedes agregar más de ${maxQty} unidades del producto.`);
                     }
+                    calcularVuelto()
                     calc()
                 })
                 tr.find('.rem-item').click(function() {
@@ -555,8 +578,6 @@
         calc();
         })
 
-
-
         $('#check_out').on('click', function () {
 
             const payments = [];
@@ -573,9 +594,16 @@
               totalPagado += amount;
             });
 
+
+
             const grandTotal = parseFloat($('#grand_total').text()) || 0;
 
- 
+            if (grandTotal == 0) {
+              alert("No se selecciono una cantidad de productos valida");
+              return;
+            }
+
+  
             if (totalPagado < grandTotal) {
               alert("El monto total ofrecido es menor al total de la venta.");
               return;
@@ -703,23 +731,7 @@
           $('#payment-methods-container').append(template);
         });
         
-        function calcularVuelto() {
-          const total = parseFloat($('#grand_total').text()) || 0;
-          let totalPagado = 0;
-      
-          $('.tendered-amount').each(function () {
-            const amount = parseFloat($(this).val()) || 0;
-            totalPagado += amount;
-          });
-      
-          const change = totalPagado - total;
-      
-          // Mostrar en campos ocultos si es necesario
-          $('[name="tendered_amount"]').val(totalPagado.toFixed(2));
-          $('[name="amount_change"]').val(change.toFixed(2));
-          $('#payment_change').val(change.toFixed(2)); // este es visible en el formulario
-        }
-      
+
 
         // Calcular Vuelto
         $(document).ready(function () {

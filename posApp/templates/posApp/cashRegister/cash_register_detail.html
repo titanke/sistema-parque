@@ -35,6 +35,20 @@
           <div class="border rounded p-3 h-100 text-success">
             <small class="text-muted">Ingresos</small>
             <div class="h5 mb-0">S/ {{ income_total|floatformat:2 }}</div>
+            <hr class="my-2">
+              <small class="text-muted d-block mb-1">Por producto:</small>
+              <ul class="ps-3 mb-0 text-muted" style="font-size: 0.875rem;">
+                {% for item in ingresos_por_producto %}
+                  <li>
+                    {{ item.nombre }}: 
+                    S/ {{ item.total_monto|floatformat:2 }} 
+                    ({{ item.total_cantidad|floatformat:0 }} uds)
+                  </li>
+                {% empty %}
+                  <li>Sin datos</li>
+                {% endfor %}
+              </ul>
+
           </div>
         </div>
         <!-- Gastos -->
@@ -130,15 +144,21 @@
                   <th>Sub Total</th>
                   <th>Total</th>
                   <th>Fecha de Venta</th>
+                  <th>Detalle</th>
                 </tr>
               </thead>
               <tbody>
                 {% for sale in sales %}
                 <tr>
                   <td>{{ sale.code }}</td>
-                  <td>{{ sale.sub_total }}</td>
-                  <td>{{ sale.grand_total }}</td>
+                  <td>S/ {{ sale.sub_total }}</td>
+                  <td>S/ {{ sale.grand_total }}</td>
                   <td>{{ sale.date_added|date:"d/m/Y H:i:s" }}</td>
+                  <td>
+                    <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded view-data" type="button" data-id="{{ sale.id }}" title="View Receipt">
+                        <i class="material-icons mdc-button__icon">receipt</i>
+                    </button>
+                  </td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -159,7 +179,9 @@
         $('#create_new').click(function() {
             uni_modal("Registrar Gasto", "{% url 'cash_register_expenses-modal' %}?id=" + $(this).attr('data-id'))
         })
-
+        $('.view-data').click(function() {
+            uni_modal("Boleta emitida", "{% url 'receipt-modal' %}?id=" + $(this).attr('data-id'))
+        })
         $('.delete-data').click(function() {
             _conf("¿Esta seguro de borrar este gasto?", "delete_payment", [$(this).attr('data-id')])
         })    

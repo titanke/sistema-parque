@@ -20,10 +20,20 @@
         <div class="card-inner">
             <h5 class="card-title">Saldo Acumulado Mes Anterior</h5>
               <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                {{ saldo_mes_anterior|floatformat:2 }} 
+                S/ {{ saldo_mes_anterior|floatformat:2 }} 
               </h5>            
-              <p class="tx-12 text-muted">Recuento de categorias</p>
-            <div class="card-icon-wrapper">
+              <p class="tx-12 text-muted">Por tipo de pago:</p>
+              <ul class="tx-12 text-muted pl-3">
+                  {% for tipo, total in ingresos_por_tipo_acumulado %}
+                      <li>{{ tipo }}: S/ {{ total|floatformat:2 }}</li>
+                  {% empty %}
+                      <li>Sin datos</li>
+                  {% endfor %}
+              </ul>           
+              <ul class="tx-12 text-muted pl-3">
+                <li>Gastos: S/ {{ egresos_acumulados|floatformat:2 }}</li>
+              </ul>   
+              <div class="card-icon-wrapper">
                 <i class="material-icons">list</i>
             </div>
         </div>
@@ -34,9 +44,16 @@
         <div class="card-inner">
             <h5 class="card-title">Total Ingresos Mes</h5>
             <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                {{ total_ingresos_mes|floatformat:2 }} <!-- Ingresos mes actual -->
+                S/ {{ total_ingresos_mes|floatformat:2 }} <!-- Ingresos mes actual -->
             </h5>            
-            <p class="tx-12 text-muted">Recuento de productos</p>
+            <p class="tx-12 text-muted">Por tipo de pago:</p>
+            <ul class="tx-12 text-muted pl-3">
+                {% for tipo, total in ingresos_por_tipo_mes %}
+                    <li>S/ {{ tipo }}: {{ total|floatformat:2 }}</li>
+                {% empty %}
+                    <li>Sin datos</li>
+                {% endfor %}
+            </ul>         
             <div class="card-icon-wrapper">
                 <i class="material-icons">label</i>
             </div>
@@ -48,9 +65,8 @@
         <div class="card-inner">
             <h5 class="card-title">Total Egresos Mes</h5>
             <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                {{ total_egresos_mes|floatformat:2 }} <!-- Egresos mes actual -->
+                S/ {{ total_egresos_mes|floatformat:2 }} <!-- Egresos mes actual -->
             </h5>            
-            <p class="tx-12 text-muted">Recuento de productos</p>
             <div class="card-icon-wrapper">
                 <i class="material-icons">label</i>
             </div>
@@ -62,9 +78,9 @@
         <div class="card-inner">
             <h5 class="card-title">Flujo Acumulado Neto</h5>
             <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                {{ flujo_acumulado_neto|floatformat:2 }} <!-- Flujo neto -->
+                S/ {{ flujo_acumulado_neto|floatformat:2 }} <!-- Flujo neto -->
             </h5>            
-            <p class="tx-12 text-muted">Recuento de productos</p>
+            <p class="tx-12 text-muted">Saldo + Total Ingresos - Total Egresos</p>
             <div class="card-icon-wrapper">
                 <i class="material-icons">label</i>
             </div>
@@ -96,6 +112,7 @@
                 </div>
                 <form method="get" action="">
                     <div class="row">
+                        <!--
                           <div class="col-md-6 col-lg-2 mb-2">
                             <div class="form-floating form-floating-sm">
                               <input type="date" name="opening_date_start" id="opening_date_start" value="{{ request_get.opening_date_start }}" class="form-control" placeholder="Desde apertura">
@@ -109,6 +126,9 @@
                               <label for="opening_date_end">Hasta apertura</label>
                             </div>
                           </div>
+            
+                        -->
+
                           <div class="col-md-6 col-lg-2 mb-2">
                             <select name="year" id="year" class="form-select">
                                 {% for y in available_years %}
@@ -201,9 +221,9 @@
                                 Sin cerrar
                             {% endif %}
                         </td>           
-                        <td class="text-center py-1">{{ cat.ventas_total|floatformat:2 }}</td>
-                        <td class="text-center py-1">{{ cat.egresos_total|floatformat:2 }}</td>
-                        <td class="text-center py-1">{{ cat.neto|floatformat:2 }}</td>  
+                        <td class="text-center py-1">S/ {{ cat.ventas_total|floatformat:2 }}</td>
+                        <td class="text-center py-1">S/ {{ cat.egresos_total|floatformat:2 }}</td>
+                        <td class="text-center py-1">S/ {{ cat.neto|floatformat:2 }}</td>  
                         <td class="px-2 py-1 text-center">
                             {% if request.user.is_superuser %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ cat.pk }}" title="Edit">

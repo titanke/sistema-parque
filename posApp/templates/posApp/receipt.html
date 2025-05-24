@@ -4,6 +4,12 @@
         display: none;
     }
 
+    hr {
+        margin: 4px 0;
+        border: none;
+        border-top: 2px solid #000; /* grosor de 2px, color negro sólido */
+    }
+
     @media print {
         body {
             margin: 0;
@@ -196,69 +202,74 @@
 
 <script>
     $(function () {
-        $('#receipt_print').click(function () {
+        function generatePDF() {
             const element = document.getElementById('outprint');
             if (!element) {
                 console.error('❌ Elemento #outprint no encontrado');
                 return;
             }
 
-            // Guardar estilos originales
-            const originalPadding = element.style.padding;
-            const originalWidth = element.style.width;
-            const originalMaxWidth = element.style.maxWidth;
+            const images = element.querySelectorAll('img');
+            let loadedImages = 0;
+            const totalImages = images.length;
 
-            // Ajustar padding solo para el PDF
-            element.style.padding = '0 2mm'; // 5mm izquierda y derecha
-            element.style.width = '80mm';    // ancho fijo
-            element.style.maxWidth = '80mm';
+            if (totalImages > 0) {
+                images.forEach(img => {
+                    if (img.complete) {
+                        loadedImages++;
+                        if (loadedImages === totalImages) renderPDF();
+                    } else {
+                        img.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === totalImages) renderPDF();
+                        };
+                    }
+                });
+            } else {
+                renderPDF();
+            }
 
-            // Forzar reflow
-            void element.offsetHeight;
+            function renderPDF() {
+                void element.offsetHeight;
+                const pxHeight = element.offsetHeight;
+                const mmPerPx = 0.264583;
+                const mmHeight = pxHeight * mmPerPx;
 
-            const pxHeight = element.offsetHeight;
-            const mmPerPx = 0.264583;
-            const mmHeight = pxHeight * mmPerPx;
+                const opt = {
+                    margin: 0,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        scrollY: 0,
+                        windowWidth: document.documentElement.offsetWidth
+                    },
+                    jsPDF: {
+                        unit: 'mm',
+                        format: [80, Math.ceil(mmHeight)],
+                        orientation: 'portrait'
+                    }
+                };
 
-            const opt = {
-                margin: 0,
-                filename: 'ticket.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    scrollY: 0,
-                    windowWidth: document.documentElement.offsetWidth
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: [80, mmHeight],
-                    orientation: 'portrait'
-                }
-            };
+                html2pdf().set(opt).from(element).outputPdf('blob').then(function (pdfBlob) {
+                    const blobUrl = URL.createObjectURL(pdfBlob);
+                    window.open(blobUrl, '_blank');
 
-            html2pdf().set(opt).from(element).output('blob').then(function (pdfBlob) {
-                const blobUrl = URL.createObjectURL(pdfBlob);
-                window.open(blobUrl, '_blank');
+                    // Limpieza opcional
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                }).catch(function (error) {
+                    console.error('❌ Error al generar el PDF:', error);
+                });
+            }
+        }
 
-                // Restaurar estilos originales
-
-            }).catch(function (error) {
-                console.error('❌ Error al generar el PDF:', error);
-       
-            });
+        $('#receipt_print').click(function () {
+            generatePDF();
         });
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
         if (autoPrint) {
-            setTimeout(() => {
-                const logo = document.querySelector('#outprint img');
-                if (logo && !logo.complete) {
-                    logo.onload = () => $('#receipt_print').trigger('click');
-                } else {
-                    $('#receipt_print').trigger('click');
-                }
-            }, 300);
+            setTimeout(() => generatePDF(), 500);
         }
     });
 </script>

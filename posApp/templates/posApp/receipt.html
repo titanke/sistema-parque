@@ -194,7 +194,6 @@
         </button>
     </div>
 </div>
-
 <script>
     $(function () {
         function generatePDF() {
@@ -210,11 +209,16 @@
 
             if (totalImages > 0) {
                 images.forEach(img => {
+                    img.crossOrigin = "anonymous";
                     if (img.complete) {
                         loadedImages++;
                         if (loadedImages === totalImages) renderPDF();
                     } else {
                         img.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === totalImages) renderPDF();
+                        };
+                        img.onerror = () => {
                             loadedImages++;
                             if (loadedImages === totalImages) renderPDF();
                         };
@@ -225,7 +229,7 @@
             }
 
             function renderPDF() {
-                void element.offsetHeight;
+                void element.offsetHeight; // Fuerza reflow
                 const pxHeight = element.offsetHeight;
                 const mmPerPx = 0.264583;
                 const mmHeight = pxHeight * mmPerPx;
@@ -249,8 +253,6 @@
                 html2pdf().set(opt).from(element).outputPdf('blob').then(function (pdfBlob) {
                     const blobUrl = URL.createObjectURL(pdfBlob);
                     window.open(blobUrl, '_blank');
-
-                    // Limpieza opcional
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
                 }).catch(function (error) {
                     console.error('❌ Error al generar el PDF:', error);
@@ -264,7 +266,20 @@
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
         if (autoPrint) {
-            setTimeout(() => generatePDF(), 500);
+            const observer = new MutationObserver(() => {
+                setTimeout(() => {
+                    generatePDF();
+                    observer.disconnect(); // Detener el observer una vez generado
+                }, 300); // Pequeño delay para asegurar layout
+            });
+
+            const target = document.getElementById('outprint');
+            if (target) {
+                observer.observe(target, {
+                    childList: true,
+                    subtree: true
+                });
+            }
         }
     });
 </script>

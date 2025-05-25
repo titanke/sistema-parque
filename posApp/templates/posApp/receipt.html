@@ -7,13 +7,18 @@
     hr {
         margin: 4px 0;
         border: none;
-        border-top: 2px solid #000; /* grosor de 2px, color negro sólido */
+        border-top: 2px solid #000;
     }
 
     @media print {
-        body {
+        html, body {
+            width: 80mm;
+            overflow: visible !important;
             margin: 0;
             padding: 0;
+            background: none !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         #outprint {
@@ -21,19 +26,12 @@
             max-width: 80mm;
             font-size: 11px;
         }
-        
+
         .modal-footer,
         .btn,
         #receipt_print {
             display: none !important;
         }
-
-        html, body {
-            background: none !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
 
         .d-flex {
             display: flex !important;
@@ -46,6 +44,9 @@
         font-size: 11px;
         background: white;
         color: black;
+        page-break-inside: avoid;
+        overflow: visible !important;
+        min-height: 100px;
     }
 
     .mini-ticket {
@@ -67,48 +68,45 @@
         font-size: 13px;
         padding: 5px;
     }
-    
+
     .ticket-row {
         display: flex;
         justify-content: space-between;
         padding: 2px 5px;
         line-height: 1.2;
     }
-    
-    /* Centrado horizontal */
+
     .ticket-row.centered {
         flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
     }
-    
+
     .ticket-row .left,
     .ticket-row .right {
         margin: 0;
         padding: 0;
         font-size: 10px;
     }
+
     .item {
         font-weight: bold;
     }
-    
-    
-
 </style>
 
 <div class="container-fluid">
-    <div id="outprint" style="max-width: 300px; margin: 0 auto; padding: 0 2mm; font-size: 11px; font-family: monospace;">
+    <div id="outprint" style="margin: 0 auto; padding: 0 2mm; font-size: 11px; font-family: monospace;">
         <div class="text-center" style="margin-bottom: 3px;">
             <img src="{{ logo_url }}" alt="Logo" style="width: 120px; height: auto; margin-bottom: 3px;">
             <div class="fw-bold text-uppercase">Parque de Aventuras Santo Domingo</div>
             <div class="fw-bold text-uppercase">Boleta de Venta</div>
             <div class="fw-bold">Código de Venta: {{ transaction.code }}</div>
         </div>
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
         <input type="hidden" id="auto_print_ticket" value="{{ print_ticket|yesno:'1,0' }}">
-    
+
         <div style="margin-bottom: 3px;">
             <div class="d-flex justify-content-between">
                 <span>Fecha: {{ transaction.date_added|date:"d/m/Y" }}</span>
@@ -117,46 +115,44 @@
             <div>RUC: 1010101010</div>
             <div>Teléfono: 942352219</div>
         </div>
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
         <div class="text-center fw-bold text-uppercase" style="margin-bottom: 2px;">Boletería</div>
-    
-        <div class="d-flex fw-bold text-center " style="padding: 2px 0;">
 
+        <div class="d-flex fw-bold text-center" style="padding: 2px 0;">
             <div class="col-5">Producto</div>
             <div class="col-3">Cant.</div>
             <div class="col-4">Importe</div>
         </div>
-    
+
         {% for item in salesItems %}
         <div class="d-flex align-items-center text-center" style="padding: 0px 0;">
             <div class="col-5">
-                    {{ item.product_id.name }}
-                    {% if item.feature_id %}
-                        {{ item.feature_id.color }} {{ item.feature_id.size }}
-                    {% endif %}
+                {{ item.product_id.name }}
+                {% if item.feature_id %}
+                {{ item.feature_id.color }} {{ item.feature_id.size }}
+                {% endif %}
             </div>
             <div class="col-3">{{ item.qty|floatformat:0 }}</div>
             <div class="col-4 text-end">S/ {{ item.total|floatformat:2 }}</div>
         </div>
         {% endfor %}
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
-    
+
         <div style="margin-bottom: 2px;">
             <div class="d-flex justify-content-between">
                 <div class="fw-bold">Subtotal</div>
                 <div>S/ {{ transaction.sub_total|floatformat:2 }}</div>
             </div>
-    
             <div class="d-flex justify-content-between">
                 <div class="fw-bold">Total</div>
                 <div>S/ {{ transaction.grand_total|floatformat:2 }}</div>
             </div>
         </div>
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
-    
+
         <div class="fw-bold" style="margin-bottom: 2px;">Métodos de Pago</div>
         {% for payment in salesPayments %}
         <div class="d-flex justify-content-between">
@@ -164,9 +160,9 @@
             <div>S/ {{ payment.amount|floatformat:2 }}</div>
         </div>
         {% endfor %}
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
-    
+
         <div style="margin-bottom: 2px;">
             <div class="d-flex justify-content-between fw-bold">
                 <div>Recibido</div>
@@ -177,13 +173,11 @@
                 <div>S/ {{ transaction.amount_change|floatformat:2 }}</div>
             </div>
         </div>
-    
+
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
-    
+
         <div class="text-center fw-bold text-uppercase">¡Gracias por su visita!</div>
     </div>
-    
-    
 
     <div class="d-flex justify-content-end mt-3">
         <button class="btn btn-light bg-gradient border rounded-0 btn-sm me-1" type="button" id="receipt_print">
@@ -194,6 +188,7 @@
         </button>
     </div>
 </div>
+
 <script>
     $(function () {
         function generatePDF() {
@@ -203,61 +198,41 @@
                 return;
             }
 
-            const images = element.querySelectorAll('img');
-            let loadedImages = 0;
-            const totalImages = images.length;
+            element.style.display = 'block';
+            element.style.visibility = 'visible';
+            void element.offsetHeight;
 
-            if (totalImages > 0) {
-                images.forEach(img => {
-                    img.crossOrigin = "anonymous";
-                    if (img.complete) {
-                        loadedImages++;
-                        if (loadedImages === totalImages) renderPDF();
-                    } else {
-                        img.onload = () => {
-                            loadedImages++;
-                            if (loadedImages === totalImages) renderPDF();
-                        };
-                        img.onerror = () => {
-                            loadedImages++;
-                            if (loadedImages === totalImages) renderPDF();
-                        };
-                    }
-                });
-            } else {
-                renderPDF();
-            }
+            const pxHeight = element.scrollHeight;
+            const mmPerPx = 0.264583;
+            const mmHeight = Math.ceil(pxHeight * mmPerPx);
 
-            function renderPDF() {
-                void element.offsetHeight; // Fuerza reflow
-                const pxHeight = element.offsetHeight;
-                const mmPerPx = 0.264583;
-                const mmHeight = pxHeight * mmPerPx;
+            const opt = {
+                margin: 0,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    scrollY: -window.scrollY,
+                    allowTaint: false,
+                    logging: false,
+                    windowWidth: document.documentElement.scrollWidth
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: [80, mmHeight],
+                    orientation: 'portrait'
+                }
+            };
 
-                const opt = {
-                    margin: 0,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: {
-                        scale: 2,
-                        useCORS: true,
-                        scrollY: 0,
-                        windowWidth: document.documentElement.offsetWidth
-                    },
-                    jsPDF: {
-                        unit: 'mm',
-                        format: [80, Math.ceil(mmHeight)],
-                        orientation: 'portrait'
-                    }
-                };
-
-                html2pdf().set(opt).from(element).outputPdf('blob').then(function (pdfBlob) {
+            html2pdf().set(opt).from(element).outputPdf('blob')
+                .then(function (pdfBlob) {
                     const blobUrl = URL.createObjectURL(pdfBlob);
                     window.open(blobUrl, '_blank');
                     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-                }).catch(function (error) {
+                })
+                .catch(function (error) {
                     console.error('❌ Error al generar el PDF:', error);
                 });
-            }
         }
 
         $('#receipt_print').click(function () {
@@ -266,20 +241,7 @@
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
         if (autoPrint) {
-            const observer = new MutationObserver(() => {
-                setTimeout(() => {
-                    generatePDF();
-                    observer.disconnect(); // Detener el observer una vez generado
-                }, 300); // Pequeño delay para asegurar layout
-            });
-
-            const target = document.getElementById('outprint');
-            if (target) {
-                observer.observe(target, {
-                    childList: true,
-                    subtree: true
-                });
-            }
+            setTimeout(() => generatePDF(), 500);
         }
     });
 </script>

@@ -104,7 +104,7 @@
             <div class="fw-bold">Código de Venta: {{ transaction.code }}</div>
         </div>
         <div style="text-align: center;"><strong>-----------------------------------------------</strong></div>
-        <input type="hidden" id="auto_print_ticket" value="{{ print_ticket|yesno:'1,0' }}">
+        <input type="hidden" id="auto_print_ticket" data-sale-id="{{ transaction.id }}" value="{{ print_ticket|yesno:'1,0' }}">
 
         <div style="margin-bottom: 3px;">
             <div class="d-flex justify-content-between">
@@ -201,8 +201,8 @@
         if (autoPrint) {
             const saleId = document.getElementById('auto_print_ticket')?.dataset.saleId;
             if (saleId) {
-                const pdfUrl = `/receipt_pdf?id=${saleId}`;
-                setTimeout(() => window.open(pdfUrl, '_blank'), 500);
+                const pdfUrl = `/receipt/pdf/?id=${saleId}`;
+                setTimeout(() => window.open(pdfUrl, '_blank'), 1);
             }
         }
     });

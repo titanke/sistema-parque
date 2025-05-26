@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+import dj_database_url
+
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,20 +95,10 @@ WSGI_APPLICATION = 'pos.wsgi.application'
 #}
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME':     os.environ['MYSQLDATABASE'],  # "santo_domingo_2025"
-        'USER':     os.environ['MYSQLUSER'],      # "root"
-        'PASSWORD': os.environ['MYSQLPASSWORD'],  # "rqmLIhFClYNRkYzFpxthThwLuBtnqruB"
-        'HOST':     os.environ['MYSQLHOST'],      # "mysql.railway.internal"
-        'PORT':     os.environ['MYSQLPORT'],      # "3306"
-        'OPTIONS':  {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL')
+    )
 }
-
-
 
 
 # Password validation

@@ -19,19 +19,22 @@ class Migration(migrations.Migration):
             model_name='expense',
             name='cash_registers',
         ),
-        migrations.CreateModel(
-            name='Expense',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('description', models.CharField(max_length=255)),
-                ('amount', models.FloatField()),
-                ('expense_date', models.DateTimeField(default=django.utils.timezone.now)),
-                ('cash_register', models.ForeignKey(
-                    to='posApp.cashRegister',  
-                    on_delete=models.CASCADE,
-                    related_name='expenses',  
-                )),            ],
-        ),
+
+
+#        migrations.CreateModel(
+ #           name='Expense',
+  #          fields=[
+   #             ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+   #             ('description', models.CharField(max_length=255)),
+   #             ('amount', models.FloatField()),
+   #             ('expense_date', models.DateTimeField(default=django.utils.timezone.now)),
+   #             ('cash_register', models.ForeignKey(
+   #                 to='posApp.cashRegister',  
+   #                 on_delete=models.CASCADE,
+   #                 related_name='expenses',  
+   #             )),            ],
+  #      ),
+        
         migrations.AddField(
             model_name='expense',
             name='cash_register',

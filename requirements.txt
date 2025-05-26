@@ -5,3 +5,5 @@ qrcode
 pillow
 gunicorn
 mysqlclient
+dj-database-url
+dotenv

@@ -175,7 +175,7 @@
     </div>
 
     <div class="d-flex justify-content-end mt-3">
-        <button class="btn btn-light bg-gradient border rounded-0 btn-sm me-1" type="button" id="receipt_print">
+        <button class="btn btn-light bg-gradient border rounded-0 btn-sm me-1" type="button" id="receipt_print" data-sale-id="{{ transaction.id }}">
             <i class="mdi mdi-printer"></i> Imprimir
         </button>
         <button class="btn btn-secondary bg-gradient border rounded-0 btn-sm" type="button" data-bs-dismiss="modal">
@@ -186,57 +186,24 @@
 
 <script>
     $(function () {
-        function generatePDF() {
-            const element = document.getElementById('outprint');
-            if (!element) {
-                console.error('❌ Elemento #outprint no encontrado');
+        $('#receipt_print').click(function () {
+            const saleId = $(this).data('sale-id');
+            if (!saleId) {
+                console.error("❌ ID de venta no proporcionado en #receipt_print");
                 return;
             }
 
-            element.style.display = 'block';
-            element.style.visibility = 'visible';
-            void element.offsetHeight;
-
-            const pxHeight = element.scrollHeight;
-            const mmPerPx = 0.264583;
-            const mmHeight = Math.ceil(pxHeight * mmPerPx);
-
-            const opt = {
-                margin: 0,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    scrollY: -window.scrollY,
-                    allowTaint: false,
-                    logging: false,
-                    windowWidth: document.documentElement.scrollWidth
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: [80, mmHeight],
-                    orientation: 'portrait'
-                }
-            };
-
-            html2pdf().set(opt).from(element).outputPdf('blob')
-                .then(function (pdfBlob) {
-                    const blobUrl = URL.createObjectURL(pdfBlob);
-                    window.open(blobUrl, '_blank');
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-                })
-                .catch(function (error) {
-                    console.error('❌ Error al generar el PDF:', error);
-                });
-        }
-
-        $('#receipt_print').click(function () {
-            generatePDF();
+            const pdfUrl = `/receipt/pdf/?id=${saleId}`;
+            window.open(pdfUrl, '_blank');
         });
 
         const autoPrint = document.getElementById('auto_print_ticket')?.value === '1';
         if (autoPrint) {
-            setTimeout(() => generatePDF(), 500);
+            const saleId = document.getElementById('auto_print_ticket')?.dataset.saleId;
+            if (saleId) {
+                const pdfUrl = `/receipt_pdf?id=${saleId}`;
+                setTimeout(() => window.open(pdfUrl, '_blank'), 500);
+            }
         }
     });
 </script>

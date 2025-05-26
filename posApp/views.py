@@ -35,6 +35,11 @@ import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import portrait
+from reportlab.lib.utils import ImageReader
+
 import os
 # Login
 def login_user(request):
@@ -1557,8 +1562,135 @@ def receipt(request):
     }
 
     return render(request, 'posApp/receipt.html', context)
+@login_required
+def receipt_pdf(request):
+    sale_id = request.GET.get('id')
+    sale = Sales.objects.filter(id=sale_id).first()
+    if not sale:
+        return HttpResponse("Venta no encontrada", status=404)
 
+    items = salesItems.objects.filter(sale_id=sale)
+    payments = SalesPayment.objects.filter(sale=sale)
 
+    # Parámetros de diseño
+    ticket_width = 80 * mm
+    line_height = 4 * mm
+    top_margin = 0 * mm
+    bottom_margin = 0 * mm
+
+    # Calcular líneas fijas y dinámicas
+    fixed_lines = 24  # logo+titulos+separadores+datos+headers+total+pie etc.
+    num_item_lines = items.count()
+    num_payment_lines = payments.count()
+    total_lines = fixed_lines + num_item_lines + num_payment_lines 
+
+    # Altura dinámica
+    ticket_height = top_margin + bottom_margin + total_lines * line_height
+
+    # Crear canvas en memoria
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=(ticket_width, ticket_height))
+    y = ticket_height - top_margin
+
+    # Helpers de dibujo
+    def draw_center(text, size=9, move=1):
+        nonlocal y
+        p.setFont("Courier-Bold", size)
+        p.drawCentredString(ticket_width / 2, y, text)
+        y -= line_height * move
+
+    def draw_left(text, size=9, move=1):
+        nonlocal y
+        p.setFont("Courier-Bold", size)
+        p.drawString(5 * mm, y, text)
+        y -= line_height * move
+    
+    def draw_left_(text, size=9, move=1):
+        nonlocal y
+        p.setFont("Courier", size)
+        p.drawString(5 * mm, y, text)
+        y -= line_height * move
+        
+    def draw_right(text, size=9, move=1):
+        nonlocal y
+        p.setFont("Courier", size)
+        p.drawRightString(ticket_width - 5 * mm, y, text)
+        y -= line_height * move
+        
+    def draw_right_m(text, size=9, move=1):
+        nonlocal y
+        p.setFont("Courier-Bold", size)
+        p.drawRightString(ticket_width - 5 * mm, y, text)
+        y -= line_height * move
+
+    def draw_sep():
+        draw_left("-" * 40, size=8, move=1)
+
+    # Logo centrado
+    try:
+        logo = ImageReader('media/products/logo.png')
+        logo_w = 30 * mm
+        logo_h = 15 * mm
+        p.drawImage(logo, (ticket_width - logo_w) / 2, y - logo_h, width=logo_w, height=logo_h)
+        y -= logo_h + line_height
+    except Exception:
+        draw_center("LOGO NO DISPONIBLE", size=8)
+
+    # Títulos
+    draw_center("Parque de Aventuras Santo Domingo", size=8)
+    draw_center("Boleta de Venta", size=8)
+    draw_center(f"Código de Venta: {sale.code}", size=8)
+    draw_sep()
+
+    # Datos fecha/hora y contacto
+    draw_left(f"Fecha: {sale.date_added.strftime('%d/%m/%Y')}", size=8)
+    draw_left(f"Hora:  {sale.date_added.strftime('%H:%M')}", size=8)
+    draw_left("RUC:  1010101010", size=8)
+    draw_left("Tel:  942352219", size=8)
+    draw_sep()
+
+    # Cabecera de items
+    draw_left("Producto", size=9, move=0)
+    draw_right_m("Importe", size=9, move=1)
+
+    # Items
+    for item in items:
+        name = item.product_id.name[:20]
+        qty_price = f"{item.qty} x S/ {item.total/item.qty:.2f}"
+        p.setFont("Courier", 8)
+        p.drawString(5 * mm, y, name)
+        p.drawRightString(ticket_width - 5 * mm, y, qty_price)
+        y -= line_height
+
+    draw_sep()
+
+    # Total
+    draw_left("Total:", size=8, move=0)
+    draw_right(f"S/ {sale.grand_total:.2f}", size=8, move=1)
+    draw_sep()
+
+    # Métodos de Pago
+    draw_left("Métodos de Pago:", size=8)
+    for pmt in payments:
+        draw_left_(f"{pmt.payment_type.name}", size=8, move=0)
+        draw_right(f"S/ {pmt.amount:.2f}", size=8, move=1)
+
+    draw_sep()
+
+    # Recibido / Vuelto
+    draw_left("Recibido:", size=8, move=0)
+    draw_right(f"S/ {sale.tendered_amount:.2f}", size=8, move=1)
+    draw_left("Vuelto:", size=8, move=0)
+    draw_right(f"S/ {sale.amount_change:.2f}", size=8, move=1)
+    draw_sep()
+
+    # Pie
+    draw_center("¡Gracias por su visita!", size=8)
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return HttpResponse(buffer, content_type='application/pdf')
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)

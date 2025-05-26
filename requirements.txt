@@ -7,3 +7,4 @@ gunicorn
 mysqlclient
 dj-database-url
 dotenv
+reportlab

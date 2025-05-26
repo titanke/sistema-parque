@@ -63,6 +63,7 @@ urlpatterns = [
 
     
     path('receipt', views.receipt, name="receipt-modal"),
+    path('receipt/pdf/', views.receipt_pdf, name='receipt_pdf'),
     path('delete_sale', views.delete_sale, name="delete-sale"),
     # path('employees', views.employees, name="employee-page"),
     # path('manage_employees', views.manage_employees, name="manage_employees-page"),

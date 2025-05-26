@@ -21,48 +21,65 @@
   <!-- Resumen de Caja -->
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card p-3">
-      <h5 class="mb-3">Resumen de Caja</h5>
-      <div class="row g-3">
-        <!-- Monto Inicial -->
-        <div class="col-md-3">
-          <div class="border rounded p-3 h-100">
-            <small class="text-muted">Monto Inicial</small>
-            <div class="h5 mb-0">S/ {{ initial|floatformat:2 }}</div>
-          </div>
-        </div>
-        <!-- Ingresos -->
-        <div class="col-md-3">
+      <div class="row">
+        <!-- Ingresos por tipo de pago -->
+        <div class="col-md-4">
           <div class="border rounded p-3 h-100 text-success">
-            <small class="text-muted">Ingresos</small>
-            <div class="h5 mb-0">S/ {{ income_total|floatformat:2 }}</div>
-            <hr class="my-2">
-              <small class="text-muted d-block mb-1">Por producto:</small>
-              <ul class="ps-3 mb-0 text-muted" style="font-size: 0.875rem;">
-                {% for item in ingresos_por_producto %}
-                  <li>
-                    {{ item.nombre }}: 
-                    S/ {{ item.total_monto|floatformat:2 }} 
-                    ({{ item.total_cantidad|floatformat:0 }} uds)
-                  </li>
-                {% empty %}
-                  <li>Sin datos</li>
-                {% endfor %}
-              </ul>
-
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-dark fw-bold">Ingresos por Tipo de Pago 💳</small>
+            </div>
+            <ul class="ps-3 mb-0 text-dark" style="font-size: 0.875rem;">
+              {% for item in ingresos_por_tipo_pago %}
+                <li>
+                  {{ item.tipo }}: S/ {{ item.monto|floatformat:2 }}
+                </li>
+              {% empty %}
+                <li>Sin datos</li>
+              {% endfor %}
+            </ul>
           </div>
         </div>
-        <!-- Gastos -->
-        <div class="col-md-3">
-          <div class="border rounded p-3 h-100 text-danger">
-            <small class="text-muted">Gastos</small>
-            <div class="h5 mb-0">S/ {{ expense_total|floatformat:2 }}</div>
+      
+        <!-- Ingresos por producto -->
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100 text-info">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-dark fw-bold">Ingresos por Producto 📦</small>
+            </div>
+            <ul class="ps-3 mb-0 text-dark" style="font-size: 0.875rem;">
+              {% for item in ingresos_por_producto %}
+                <li>
+                  {{ item.nombre }}: S/ {{ item.total_monto|floatformat:2 }} 
+                  ({{ item.total_cantidad|floatformat:0 }} uds)
+                </li>
+              {% empty %}
+                <li>Sin datos</li>
+              {% endfor %}
+            </ul>
           </div>
         </div>
-        <!-- Monto Final -->
-        <div class="col-md-3">
-          <div class="bg-primary text-white rounded p-3 h-100">
-            <small class="text-light">Monto Final</small>
-            <div class="h5 mb-0">S/ {{ final_total|floatformat:2 }}</div>
+      
+        <!-- Consolidado -->
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-dark fw-bold">Consolidado 📊</small>
+            </div>
+            <ul class="ps-0 mb-0 list-unstyled" style="font-size: 0.875rem;">
+              <li>
+                <strong class="text-success">Ingresos:</strong>
+                <span class="float-end">S/ {{ income_total|floatformat:2 }}</span>
+              </li>
+              <li>
+                <strong class="text-danger">Gastos:</strong>
+                <span class="float-end">S/ {{ expense_total|floatformat:2 }}</span>
+              </li>
+              <hr>
+              <li>
+                <strong class="text-primary">Total Neto:</strong>
+                <span class="float-end">S/ {{ final_total|floatformat:2 }}</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

@@ -85,7 +85,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <h4 class="card-title mb-0">Ventas</h4>
             <div class="d-flex align-items-center">
-                <label for="cash_register_select" class="me-2">Caja Actual:</label>
+                <label for="cash_register_select" style="white-space: nowrap;">Fecha Caja:</label>
                 <select id="cash_register_select" class="form-select form-select-sm" name="cash_register_id"> 
                     {% for cash_register in cash_registers %}
                         <option value="{{ cash_register.id }}">
@@ -148,13 +148,13 @@
                           <col width="20%">
                         </colgroup>
                         <thead>
-                          <tr class="bg-dark bg-gradient bg-opacity-50 text-light">
-                            <th class="py-1 px-2 text-center"></th>
-                            <th class="py-1 px-2 text-center">Cant.</th>
-                            <th class="py-1 px-2 text-center">Producto</th>
-                            <th class="py-1 px-2 text-center">Precio</th>
-                            <th class="py-1 px-2 text-center">Total</th>
-                          </tr>
+                          <tr class="bg-dark bg-gradient bg-opacity-50">
+                            <th class="py-1 px-2 text-center text-white"></th>
+                            <th class="py-1 px-2 text-center text-white">Cant.</th>
+                            <th class="py-1 px-2 text-center text-white">Producto</th>
+                            <th class="py-1 px-2 text-center text-white">Precio</th>
+                            <th class="py-1 px-2 text-center text-white">Total</th>
+                          </tr>                          
                         </thead>
                         <tbody>
                         </tbody>

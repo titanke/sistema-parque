@@ -430,7 +430,8 @@ def cash_register(request):
 
     # Si no es superusuario, filtrar solo sus cajas
     if not request.user.is_superuser:
-        queryset = queryset.filter(user=request.user)
+        today = now().date()
+        queryset = queryset.filter(user=request.user, opening_date__date=today)
 
     # Filtrar por fecha de apertura
     if opening_date_start:
@@ -500,7 +501,14 @@ def cash_register(request):
         caja.neto = ventas - egresos
 
     users = User.objects.all() if request.user.is_superuser else []
-
+    today = now().date()  
+    opened_today_count = False
+    if not request.user.is_superuser:
+        opened_today_count = CashRegister.objects.filter(
+            user=request.user,
+            opening_date__date= today
+        ).exists()
+        
     context = {
         'payment': page_obj,
         'page_obj': page_obj,
@@ -517,10 +525,14 @@ def cash_register(request):
         'flujo_acumulado_neto': flujo_acumulado_neto,
         'month': month,
         'year': year,
+        'opened_today_count': opened_today_count,
         'request_get': request.GET,
     }
     return render(request, 'posApp/cashRegister/cash_register.html', context)
 
+
+from collections import defaultdict
+from decimal import Decimal
 
 @login_required
 def cash_register_detail(request, pk):
@@ -531,30 +543,55 @@ def cash_register_detail(request, pk):
 
     expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
     income_total = sum(s.grand_total for s in sales)
-    initial = cash_register.opening_amount or 0
-    final_total = initial + income_total - expense_total
+    final_total = income_total - expense_total
 
-    # === Ingresos por nombre de producto ===
+    # === Ingresos por producto ===
     ingresos_por_producto = (
         salesItems.objects
         .filter(sale_id__in=sales)
-        .values(nombre=F('product_id__name'))  # agrupamos por nombre del producto
+        .values(nombre=F('product_id__name'))
         .annotate(
             total_monto=Sum('total'),
             total_cantidad=Sum('qty')
         )
         .order_by('-total_monto')
     )
+    pagos_por_tipo = defaultdict(Decimal)
 
+    for sale in sales:
+        pagos = list(sale.sales_payments.all())
+        vuelto = sale.amount_change
+
+        if not pagos:
+            continue
+
+        # Buscar el pago con mayor monto
+        pago_max = max(pagos, key=lambda p: p.amount)
+
+        for pago in pagos:
+            ingreso_real = pago.amount
+
+            if pago == pago_max:
+                ingreso_real -= vuelto  # Solo a este le restamos el vuelto
+
+            pagos_por_tipo[pago.payment_type.name] += Decimal(ingreso_real)
+
+    # Convertimos a lista para usar en template
+    ingresos_por_tipo_pago = [
+        {'tipo': tipo, 'monto': float(round(monto, 2))}
+        for tipo, monto in pagos_por_tipo.items()
+    ]
+    ingresos_por_tipo_pago.sort(key=lambda x: -x['monto'])  # Orden descendente por monto
+    
     context = {
         'cash_register': cash_register,
         'expenses': expenses,
         'sales': sales,
-        'initial': initial,
         'income_total': income_total,
         'expense_total': expense_total,
         'final_total': final_total,
         'ingresos_por_producto': ingresos_por_producto,
+        'ingresos_por_tipo_pago': ingresos_por_tipo_pago,
     }
     return render(request, 'posApp/cashRegister/cash_register_detail.html', context)
 
@@ -596,7 +633,6 @@ def save_cash_register(request):
         if (data['id']).isnumeric() and int(data['id']) > 0:
             try:
                 cash_reg = CashRegister.objects.get(id=int(data['id']))
-                cash_reg.opening_amount = data['opening_amount']
                 cash_reg.user = user
 
                 # Si se marcó el switch para reabrir
@@ -612,7 +648,6 @@ def save_cash_register(request):
         else:
             # Crear nueva caja
             cash_reg = CashRegister(
-                opening_amount=data['opening_amount'],
                 user=user
             )
             cash_reg.save()
@@ -647,7 +682,6 @@ def delete_cash_register(request):
 @login_required
 def close_cash_register_modal(request):
     cash_register = {}
-    initial = {}
     expense_total = {}
     income_total = {}
     final_total = {}
@@ -665,17 +699,12 @@ def close_cash_register_modal(request):
             expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
             # suma de ingresos (grand_total de cada venta)
             income_total = sum(s.grand_total for s in sales)
-
-            # monto inicial (asumo que lo guardas en un campo llamado initial_amount)
-            initial = cash_register.opening_amount or 0
-
             # monto final = inicial + ingresos – gastos
-            final_total = initial + income_total - expense_total
+            final_total = income_total - expense_total
 
 
     context = {
         'cash_register': cash_register,
-        'initial': initial,
         'income_total': income_total,
         'expense_total': expense_total,
         'final_total': final_total,
@@ -1340,6 +1369,7 @@ def salesList(request):
     user_id = request.GET.get('user_id', '')
     per_page = int(request.GET.get('per_page', 10))
     page_number = request.GET.get('page', 1)
+    today = now().date()  
 
     sales = Sales.objects.all()
 
@@ -1367,9 +1397,12 @@ def salesList(request):
 
     # Filtrar ventas según el usuario
     if request.user.is_superuser:
-        filtered_sales = sales.distinct().order_by('-id')  # Todas las ventas, ordenadas por ID descendente
+        filtered_sales = sales.distinct().order_by('-id') 
     else:
-        filtered_sales = sales.filter(cashregister__user=request.user).distinct().order_by('-id')
+        filtered_sales = sales.filter(
+            cashregister__user=request.user,
+            date_added__date=today 
+        ).distinct().order_by('-id')
 
     sale_data = []
     for sale in filtered_sales:
@@ -1435,6 +1468,56 @@ def salesList(request):
         'today': datetime.now().date().strftime('%Y-%m-%d'),
     }
     return render(request, 'posApp/sales.html', context)
+
+
+def expense_list(request):
+    today = now().date()
+    expenses = Expense.objects.all()
+
+    # Filtro por permisos
+    if not request.user.is_superuser:
+        expenses = expenses.filter(
+            cash_register__user=request.user,
+            expense_date__date=today
+        )
+
+    # Filtros GET
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    user_id = request.GET.get('user_id')
+    cash_register_id = request.GET.get('payment_type_id')  # "Caja" en tu formulario
+
+    if date_from:
+        expenses = expenses.filter(expense_date__date__gte=date_from)
+    if date_to:
+        expenses = expenses.filter(expense_date__date__lte=date_to)
+    if user_id:
+        expenses = expenses.filter(cash_register__user__id=user_id)
+    if cash_register_id:
+        expenses = expenses.filter(cash_register__id=cash_register_id)
+
+    # Paginación
+    per_page = request.GET.get('per_page', 10)
+    paginator = Paginator(expenses.order_by('-expense_date'), per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Preparar usuarios y cajas para los filtros
+    users = User.objects.all()
+    payment_types = CashRegister.objects.all()
+
+    context = {
+        'page_obj': page_obj,
+        'expense_data': page_obj.object_list,
+        'users': users,
+        'payment_types': payment_types,
+        'date_from': date_from,
+        'date_to': date_to,
+        'base_url': request.GET.urlencode().replace(f"&page={page_number}", "") if page_number else request.GET.urlencode()
+    }
+    return render(request, 'posApp/expenses.html', context)
+
+
 
 @login_required
 def receipt(request):

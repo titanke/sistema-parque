@@ -59,6 +59,9 @@ urlpatterns = [
     path('checkout-modal', views.checkout_modal, name="checkout-modal"),
     path('save-pos', views.save_pos, name="save-pos"),
     path('sales', views.salesList, name="sales-page"),
+    path('expenses', views.expense_list, name="expenses-page"),
+
+    
     path('receipt', views.receipt, name="receipt-modal"),
     path('delete_sale', views.delete_sale, name="delete-sale"),
     # path('employees', views.employees, name="employee-page"),

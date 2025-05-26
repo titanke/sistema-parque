@@ -15,7 +15,7 @@
     }
 </style>
 {% if request.user.is_superuser %}
-    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-12-tablet">
         <div class="mdc-card info-card info-card--warning">
             <div class="card-inner">
                 <h5 class="card-title">Saldo Acumulado Mes Anterior</h5>
@@ -39,7 +39,7 @@
             </div>
         </div>
     </div>
-    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-12-tablet">
         <div class="mdc-card info-card info-card--success">
             <div class="card-inner">
                 <h5 class="card-title">Total Ingresos Mes</h5>
@@ -60,7 +60,7 @@
             </div>
         </div>
     </div>
-    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-12-tablet">
         <div class="mdc-card info-card info-card--danger">
             <div class="card-inner">
                 <h5 class="card-title">Total Egresos Mes</h5>
@@ -73,7 +73,7 @@
             </div>
         </div>
     </div>
-    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-3-tablet">
+    <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-3-desktop mdc-layout-grid__cell--span-12-tablet">
         <div class="mdc-card info-card info-card--primary">
             <div class="card-inner">
                 <h5 class="card-title">Flujo Acumulado Neto</h5>
@@ -100,7 +100,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="card-title mb-0">Cajas</h4>
                     <div class="text-end mb-2">
-                        {% if request.user.is_superuser or opened_today_count == 0 %}
+                        {% if request.user.is_superuser or not opened_today_count %}
                             <button id="create_new" class="btn btn-success bg-gradient btn-sm rounded-0">
                                 <i class="mdi mdi-plus"></i><span> Abrir caja</span>
                             </button>
@@ -109,7 +109,7 @@
                                 <i class="mdi mdi-lock"></i><span> Ya abriste una caja hoy</span>
                             </button>
                         {% endif %}
-                      </div>
+                    </div>
                 </div>
                 <form method="get" action="">
                     <div class="row">
@@ -193,7 +193,6 @@
                 <thead>
                     <tr>
                         <th class="text-center py-1">#</th>
-                        <th class="text-center py-1">Monto de Apertura</th>
                         <th class="text-center py-1">Usuario</th>
                         <th class="text-center py-1">Fecha de Apertura</th>
                         <th class="text-center py-1">Fecha de Cierre</th>
@@ -207,7 +206,6 @@
                     {% for cat in payment %}
                     <tr>
                         <td class="px-2 py-1 text-center">{{ cat.id }}</td>
-                        <td class="px-2 py-1 text-center">{{ cat.opening_amount|floatformat:2 }}</td>
                         <td class="px-2 py-1 text-center">
                             {% if cat.user %}
                                 {{ cat.user.username }} {% else %}

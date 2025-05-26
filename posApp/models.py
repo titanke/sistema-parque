@@ -66,7 +66,6 @@ class PaymentType(models.Model):
     
     
 class CashRegister(models.Model):
-    opening_amount = models.FloatField(default=0)
     opening_date = models.DateTimeField(default=timezone.now)
     close_date = models.DateTimeField(null=True, blank=True)
     sales = models.ManyToManyField('Sales', through='CashRegisterSales')

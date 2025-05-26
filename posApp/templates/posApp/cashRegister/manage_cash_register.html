@@ -1,10 +1,6 @@
 <div class="container-fluid">
     <form action="" id="cash_register-form">
         <input type="hidden" name="id" value="{% if cash_register.pk %}{{cash_register.pk}}{% endif %}">
-        <div class="form-group mb-3">
-            <label for="opening_amount" class="control-label">Monto de Apertura</label>
-            <input type="number" name="opening_amount" id="opening_amount" class="form-control form-control-sm rounded-0" value="{% if cash_register.opening_amount %}{{cash_register.opening_amount}}{% endif %}" required>
-        </div>
         {% if cash_register.close_date %}
             <div class="form-group mb-3">
                 <label for="reopen_register" class="form-label">Reabrir Caja</label>
@@ -15,17 +11,23 @@
             </div>
         {% endif %}
 
-        <div class="form-group mb-3">
-            <label for="user_id" class="control-label">Usuario</label>
-            <select name="user_id" id="user_id" class="form-select form-select-sm rounded-0" required>
-                <option value="" {% if not cash_register.user_id %}selected{% endif %}>Seleccionar Usuario</option>
-                {% for user in users %}
-                    <option value="{{ user.id }}" {% if cash_register.user_id == user.id %}selected{% endif %}>
-                        {{ user.username }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
+        {% if request.user.is_superuser %}
+            <div class="form-group mb-3">
+                <label for="user_id" class="control-label">Usuario</label>
+                <select name="user_id" id="user_id" class="form-select form-select-sm rounded-0" required>
+                    <option value="" {% if not cash_register.user_id %}selected{% endif %}>Seleccionar Usuario</option>
+                    {% for user in users %}
+                        <option value="{{ user.id }}" {% if cash_register.user_id == user.id %}selected{% endif %}>
+                            {{ user.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% else %}
+            <span>¿Estás seguro de abrir la caja de hoy?</span>
+            <input type="hidden" name="user_id" value="{{ request.user.id }}">
+        {% endif %}
+    
     </form>
 </div>
 <script>

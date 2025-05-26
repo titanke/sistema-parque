@@ -96,7 +96,7 @@ WSGI_APPLICATION = 'pos.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL')
+        default=os.getenv('MYSQL_URL')
     )
 }
 

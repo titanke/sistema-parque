@@ -1624,7 +1624,7 @@ def receipt_pdf(request):
         y -= line_height * move
 
     def draw_sep():
-        draw_left("-" * 40, size=8, move=1)
+        draw_left("-" * 41, size=8, move=1)
 
     # Logo centrado
     try:

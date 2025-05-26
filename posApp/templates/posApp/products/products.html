@@ -161,7 +161,7 @@
                       <td class="px-2 py-1 text-start">{{ product.code }} - {{ product.name }}</td>
                       <td class="px-2 py-1 text-start">S/ {{ product.price }}</td>
                       <td class="px-2 py-1 text-start">
-                        {% if product.category_id.name|lower == 'ticket' or product.category_id.name|lower == 'atracción' %}
+                        {% if product.category_id.name|lower == 'parque' %}
                               -
                           {% else %}
                               {{ product.stock }}

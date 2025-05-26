@@ -115,7 +115,7 @@
                           <option value="--" disabled selected></option>
                           {% for product in products %}
                               <option value="{{ product.pk }}" data-stock="{{ product.stock }}">
-                                {{ product.name }}{% if product.category_id.name != 'TICKET' and product.category_id.name != 'ATRACCIÓN' %} (stk: {{ product.stock }}){% endif %}
+                                {{ product.name }}{% if product.category_id.name != 'PARQUE' %} (stk: {{ product.stock }}){% endif %}
                               </option>
                           {% endfor %}
                           </select>

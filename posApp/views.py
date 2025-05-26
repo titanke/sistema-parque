@@ -1268,7 +1268,7 @@ def save_pos(request):
             feature_id = data.getlist('feature_id[]')[i] if 'feature_id[]' in data else None
             feature = ProductFeature.objects.filter(id=feature_id).first() if feature_id else None
 
-            if product.category_id.name.strip().upper() not in ['TICKET', 'ATRACCIÓN']:
+            if product.category_id.name.strip().upper() not in ['PARQUE']:
                 product.stock -= qty
                 product.save()
 
@@ -1573,7 +1573,7 @@ def delete_sale(request):
             
             for item in sale_items:
                 product = item.product_id
-                if product.category_id.name.strip().upper() not in ['TICKET', 'ATRACCIÓN']:
+                if product.category_id.name.strip().upper() not in ['PARQUE']:
                     product.stock += item.qty
 
                     if product.status == 0 and product.stock > 0:

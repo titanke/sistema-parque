@@ -18,6 +18,7 @@
                 <div class="mdc-menu mdc-menu-surface" tabindex="-1">
                     <ul class="mdc-list" role="menu" aria-hidden="true" aria-orientation="vertical">
                         <li class="mdc-list-item" role="menuitem">
+                            {% if user.is_superuser %}
                             <a class="text-dark" href="{% url 'redirect-admin' %}">
                                 <div class="item-thumbnail item-thumbnail-icon-only">
                                     <i class="mdi mdi-settings-outline text-dark"></i>
@@ -28,7 +29,9 @@
                                     </h6>
                                 </div>
                             </a>
+                            {% endif %}
                         </li>
+                        
                         <li class="mdc-list-item" role="menuitem">
                             <a class="text-dark" href="{% url 'logout' %}">
                                 <div class="item-thumbnail item-thumbnail-icon-only">

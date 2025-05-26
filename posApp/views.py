@@ -7,6 +7,7 @@ from pickle import FALSE
 from django.db.models import F, Sum
 from django.utils.timezone import now
 from collections import defaultdict
+from django.contrib.auth.decorators import user_passes_test
 
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse
@@ -200,19 +201,19 @@ def about(request):
     }
     return render(request, 'posApp/about.html',context)
 
-#Categories
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def category(request):
     category_list = Category.objects.all()
-    # category_list = {}
     context = {
-        'page_title':'Lista de Categorias',
-        'category':category_list,
+        'page_title': 'Lista de Categorias',
+        'category': category_list,
     }
-    return render(request, 'posApp/category.html',context)
+    return render(request, 'posApp/category.html', context)
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def manage_category(request):
     category = {}
     if request.method == 'GET':
@@ -301,6 +302,7 @@ def delete_color(request):
 
 ""
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def payment(request):
     search = request.GET.get('search', '')
     if search:
@@ -315,6 +317,7 @@ def payment(request):
     return render(request, 'posApp/payment.html',context)
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def manage_payment(request):
     payment = {}
     if request.method == 'GET':
@@ -332,6 +335,7 @@ def manage_payment(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def save_payment(request):
     data =  request.POST
     resp = {'status':'failed'}
@@ -350,6 +354,7 @@ def save_payment(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def delete_payment(request):
     data = request.POST
     resp = {'status': ''}
@@ -659,6 +664,7 @@ def save_cash_register(request):
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def delete_cash_register(request):
     if request.method == "POST":
         cash_register_id = request.POST.get("id")
@@ -902,6 +908,7 @@ def save_category(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def delete_category(request):
     data = request.POST
     resp = {'status': ''}
@@ -923,6 +930,7 @@ def delete_category(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def products(request):
     search = request.GET.get('search', '')
     category_filter = request.GET.get('category', '')
@@ -962,6 +970,7 @@ def products(request):
     return render(request, 'posApp/products/products.html', context)
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def manage_products(request):
     product = {}
     features = []
@@ -1134,6 +1143,7 @@ def upload_file(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def delete_product(request):
     data =  request.POST
     resp = {'status':''}
@@ -1551,6 +1561,7 @@ def receipt(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.is_superuser)
 def delete_sale(request):
     resp = {'status': 'failed', 'msg': ''}
     id = request.POST.get('id')

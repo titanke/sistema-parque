@@ -131,8 +131,8 @@
                   <td>{{ expense.amount }}</td>
                   <td>{{ expense.expense_date|date:"d/m/Y H:i:s" }}</td>
                   <td class="px-2 py-1 text-center">
-                    {% if not cash_register.close_date %}
-                        <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data"
+                    {% if not cash_register.close_date and user.is_superuser %}
+                      <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--danger mdc-ripple-upgraded delete-data"
                                 type="button"
                                 data-id="{{ expense.pk }}"
                                 title="Delete">

@@ -50,11 +50,15 @@ class SalesPayment(models.Model):
     payment_type = models.ForeignKey('PaymentType', on_delete=models.RESTRICT)
     amount = models.FloatField(default=0)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["sale"]),
+            models.Index(fields=["payment_type"]),
+        ]
+
     def __str__(self):
         return f"{self.sale.code} - {self.payment_type.name} - {self.amount}"
 
-    
-    
 class PaymentType(models.Model):
     name = models.TextField()
     status = models.IntegerField(default=1) 
@@ -95,18 +99,27 @@ class Sales(models.Model):
     amount_change = models.FloatField(default=0)
     date_added = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["date_added"]),
+        ]
 
     def __str__(self):
         return self.code
-
+    
 
 class CashRegisterSales(models.Model):
     cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE)
     sale = models.ForeignKey(Sales, on_delete=models.CASCADE)
     date_added = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         unique_together = ('cash_register', 'sale')
+        indexes = [
+            models.Index(fields=["cash_register"]),
+            models.Index(fields=["sale"]),
+        ]
 
 #Caracteristicas
 class Size(models.Model):
@@ -165,5 +178,11 @@ class salesItems(models.Model):
     price = models.FloatField(default=0)
     qty = models.FloatField(default=0)
     total = models.FloatField(default=0)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["sale_id"]),
+            models.Index(fields=["product_id"]),
+        ]
     
     

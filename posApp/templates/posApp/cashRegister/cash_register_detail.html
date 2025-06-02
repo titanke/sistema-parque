@@ -1,4 +1,5 @@
 {% extends "posApp/base.html" %} {% block pageContent %}
+{% load format_filters %}
 
 <div class="mdc-layout-grid__cell stretch-card mdc-layout-grid__cell--span-12">
     <div class="mdc-card py-2">
@@ -31,7 +32,7 @@
             <ul class="ps-3 mb-0 text-dark" style="font-size: 0.875rem;">
               {% for item in ingresos_por_tipo_pago %}
                 <li>
-                  {{ item.tipo }}: S/ {{ item.monto|floatformat:2 }}
+                  {{ item.tipo }}: S/ {{ item.monto|punto_decimal }}
                 </li>
               {% empty %}
                 <li>Sin datos</li>
@@ -49,7 +50,7 @@
             <ul class="ps-3 mb-0 text-dark" style="font-size: 0.875rem;">
               {% for item in ingresos_por_producto %}
                 <li>
-                  {{ item.nombre }}: S/ {{ item.total_monto|floatformat:2 }} 
+                  {{ item.nombre }}: S/ {{ item.total_monto|punto_decimal }} 
                   ({{ item.total_cantidad|floatformat:0 }} uds)
                 </li>
               {% empty %}
@@ -68,16 +69,16 @@
             <ul class="ps-0 mb-0 list-unstyled" style="font-size: 0.875rem;">
               <li>
                 <strong class="text-success">Ingresos:</strong>
-                <span class="float-end">S/ {{ income_total|floatformat:2 }}</span>
+                <span class="float-end">S/ {{ income_total|punto_decimal }}</span>
               </li>
               <li>
                 <strong class="text-danger">Gastos:</strong>
-                <span class="float-end">S/ {{ expense_total|floatformat:2 }}</span>
+                <span class="float-end">S/ {{ expense_total|punto_decimal }}</span>
               </li>
               <hr>
               <li>
                 <strong class="text-primary">Total Neto:</strong>
-                <span class="float-end">S/ {{ final_total|floatformat:2 }}</span>
+                <span class="float-end">S/ {{ final_total|punto_decimal }}</span>
               </li>
             </ul>
           </div>
@@ -128,7 +129,7 @@
                 {% for expense in expenses %}
                 <tr>
                   <td>{{ expense.description }}</td>
-                  <td>{{ expense.amount }}</td>
+                  <td>{{ expense.amount|punto_decimal }}</td>
                   <td>{{ expense.expense_date|date:"d/m/Y H:i:s" }}</td>
                   <td class="px-2 py-1 text-center">
                     {% if not cash_register.close_date and user.is_superuser %}
@@ -168,8 +169,8 @@
                 {% for sale in sales %}
                 <tr>
                   <td>{{ sale.code }}</td>
-                  <td>S/ {{ sale.sub_total }}</td>
-                  <td>S/ {{ sale.grand_total }}</td>
+                  <td>S/ {{ sale.sub_total|punto_decimal }}</td>
+                  <td>S/ {{ sale.grand_total|punto_decimal }}</td>
                   <td>{{ sale.date_added|date:"d/m/Y H:i:s" }}</td>
                   <td>
                     <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded view-data" type="button" data-id="{{ sale.id }}" title="View Receipt">

@@ -8,3 +8,4 @@ mysqlclient
 dj-database-url
 dotenv
 reportlab
+faker

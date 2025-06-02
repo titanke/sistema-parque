@@ -3,7 +3,7 @@
         <input type="hidden" name="cash_register_id" value="{% if cash_register.pk %}{{ cash_register.pk }}{% endif %}">
         <div class="form-group mb-3">
             <label for="amount" class="control-label">Monto del Gasto</label>
-            <input type="number" name="amount" id="amount" class="form-control form-control-sm rounded-0" value="" required>
+            <input type="number" name="amount" id="amount" class="form-control form-control-sm rounded-0" value="" step="0.01" required>
         </div>
         <div class="form-group mb-3">
             <label for="description" class="control-label">Descripción del Gasto</label>

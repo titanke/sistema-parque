@@ -1,4 +1,6 @@
 {% extends "posApp/base.html" %} {% load humanize %} {% block pageContent %}
+{% load format_filters %}
+
 <style>
     /* Ajustes personalizados solo para form-floating de fechas */
     .form-floating-sm .form-control {
@@ -132,7 +134,7 @@
                                 —
                             {% endfor %}
                         </td>
-                        <td class="px-2 py-1 text-end">S/ {{ sale.grand_total|floatformat:2 }}</td>
+                        <td class="px-2 py-1 text-end">S/ {{ sale.grand_total|punto_decimal }}</td>
                         <!--
                         <td class="px-2 py-1 text-end">({{ sale.tax }}%) {{ sale.tax_amount|intcomma:2 }}</td>
                         <td class="px-2 py-1 text-end">{{ sale.descuento|intcomma:2 }}</td>

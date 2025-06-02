@@ -1,4 +1,5 @@
 {% extends "posApp/base.html" %} {% block pageContent %}
+{% load format_filters %}
 
 <style>
     /* Ajustes personalizados solo para form-floating de fechas */
@@ -20,18 +21,18 @@
             <div class="card-inner">
                 <h5 class="card-title">Saldo Acumulado Mes Anterior</h5>
                 <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                    S/ {{ saldo_mes_anterior|floatformat:2 }} 
-                </h5>            
+                    S/ {{ saldo_mes_anterior|punto_decimal }}
+                </h5>       
                 <p class="tx-12 text-muted">Por tipo de pago:</p>
                 <ul class="tx-12 text-muted pl-3">
                     {% for tipo, total in ingresos_por_tipo_acumulado %}
-                        <li>{{ tipo }}: S/ {{ total|floatformat:2 }}</li>
+                        <li>{{ tipo }}: S/ {{ total|punto_decimal }}</li>
                     {% empty %}
                         <li>Sin datos</li>
                     {% endfor %}
                 </ul>           
                 <ul class="tx-12 text-muted pl-3">
-                    <li>Gastos: S/ {{ egresos_acumulados|floatformat:2 }}</li>
+                    <li>Gastos: S/ {{ egresos_acumulados|punto_decimal }}</li>
                 </ul>   
                 <div class="card-icon-wrapper">
                     <i class="material-icons">attach_money</i>
@@ -44,12 +45,12 @@
             <div class="card-inner">
                 <h5 class="card-title">Total Ingresos Mes</h5>
                 <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                    S/ {{ total_ingresos_mes|floatformat:2 }} <!-- Ingresos mes actual -->
+                    S/ {{ total_ingresos_mes|punto_decimal }} <!-- Ingresos mes actual -->
                 </h5>            
                 <p class="tx-12 text-muted">Por tipo de pago:</p>
                 <ul class="tx-12 text-muted pl-3">
                     {% for tipo, total in ingresos_por_tipo_mes %}
-                        <li>S/ {{ tipo }}: {{ total|floatformat:2 }}</li>
+                        <li>S/ {{ tipo }}: {{ total|punto_decimal }}</li>
                     {% empty %}
                         <li>Sin datos</li>
                     {% endfor %}
@@ -65,7 +66,7 @@
             <div class="card-inner">
                 <h5 class="card-title">Total Egresos Mes</h5>
                 <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                    S/ {{ total_egresos_mes|floatformat:2 }} <!-- Egresos mes actual -->
+                    S/ {{ total_egresos_mes|punto_decimal }} <!-- Egresos mes actual -->
                 </h5>            
                 <div class="card-icon-wrapper">
                     <i class="material-icons" >trending_down</i>
@@ -78,7 +79,7 @@
             <div class="card-inner">
                 <h5 class="card-title">Flujo Acumulado Neto</h5>
                 <h5 class="font-weight-light pb-2 mb-1 border-bottom">
-                    S/ {{ flujo_acumulado_neto|floatformat:2 }} <!-- Flujo neto -->
+                    S/ {{ flujo_acumulado_neto|punto_decimal }} <!-- Flujo neto -->
                 </h5>            
                 <p class="tx-12 text-muted">Saldo + Total Ingresos - Total Egresos</p>
                 <div class="card-icon-wrapper">
@@ -220,9 +221,9 @@
                                 Sin cerrar
                             {% endif %}
                         </td>           
-                        <td class="text-center py-1">S/ {{ cat.ventas_total|floatformat:2 }}</td>
-                        <td class="text-center py-1">S/ {{ cat.egresos_total|floatformat:2 }}</td>
-                        <td class="text-center py-1">S/ {{ cat.neto|floatformat:2 }}</td>  
+                        <td class="text-center py-1">S/ {{ cat.ventas_total|punto_decimal }}</td>
+                        <td class="text-center py-1">S/ {{ cat.egresos_total|punto_decimal }}</td>
+                        <td class="text-center py-1">S/ {{ cat.neto|punto_decimal }}</td>  
                         <td class="px-2 py-1 text-center">
                             {% if request.user.is_superuser %}
                             <button class="mdc-button mdc-button--raised p-1 icon-button filled-button--light mdc-ripple-upgraded edit-data" type="button" data-id="{{ cat.pk }}" title="Edit">

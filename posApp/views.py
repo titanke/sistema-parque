@@ -14,7 +14,7 @@ from django.http import HttpResponse
 from posApp.models import Category, Products, Sales, salesItems, PaymentType, Size, Color,ProductFeature, CashRegister, CashRegisterSales, Expense, SalesPayment
 from django.db.models import Count, Sum
 from django.contrib.auth.models import User
-
+from django.db.models import Q, Prefetch
 from django.db.models.deletion import ProtectedError
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -1378,54 +1378,71 @@ def clean_get_params(params):
 @login_required
 def salesList(request):
     search_query = request.GET.get('search', '')
-    date_from = request.GET.get('date_from', '') 
+    date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     payment_type_id = request.GET.get('payment_type_id', '')
     user_id = request.GET.get('user_id', '')
     per_page = int(request.GET.get('per_page', 10))
     page_number = request.GET.get('page', 1)
-    today = now().date()  
+    today = now().date()
 
+    # Base queryset
     sales = Sales.objects.all()
 
+    # Filtro de búsqueda
     if search_query:
         sales = sales.filter(Q(code__icontains=search_query))
 
+    # Filtro por fecha desde
     try:
         date_from_dt = datetime.strptime(date_from, '%Y-%m-%d')
         sales = sales.filter(date_added__date__gte=date_from_dt)
     except ValueError:
         pass
 
-    if date_to:
-        try:
-            date_to_dt = datetime.strptime(date_to, '%Y-%m-%d')
-            sales = sales.filter(date_added__date__lte=date_to_dt)
-        except ValueError:
-            pass
+    # Filtro por fecha hasta
+    try:
+        date_to_dt = datetime.strptime(date_to, '%Y-%m-%d')
+        sales = sales.filter(date_added__date__lte=date_to_dt)
+    except ValueError:
+        pass
 
+    # Filtro por tipo de pago
     if payment_type_id:
         sales = sales.filter(sales_payments__payment_type_id=payment_type_id).distinct()
 
+    # Filtro por usuario
     if user_id:
         sales = sales.filter(cashregistersales__cash_register__user_id=user_id)
 
-    # Filtrar ventas según el usuario
+    # Restricciones según usuario logueado
     if request.user.is_superuser:
-        filtered_sales = sales.distinct().order_by('-id') 
+        filtered_sales = sales
     else:
         filtered_sales = sales.filter(
             cashregister__user=request.user,
-            date_added__date=today 
-        ).distinct().order_by('-id')
+            date_added__date=today
+        )
+
+    # OPTIMIZACIÓN: prefetch y select_related
+    filtered_sales = filtered_sales.select_related().prefetch_related(
+        'sales_payments__payment_type',
+        Prefetch('salesitems_set'),
+        Prefetch('cashregistersales_set__cash_register__user')
+    ).distinct().order_by('-id')
+
+    # Paginación primero
+    paginator = Paginator(filtered_sales, per_page)
+    page_obj = paginator.get_page(page_number)
 
     sale_data = []
-    for sale in filtered_sales:
-        data = {}
 
-        for field in sale._meta.get_fields(include_parents=False):
-            if field.related_model is None:
-                data[field.name] = getattr(sale, field.name)
+    for sale in page_obj.object_list:
+        data = {
+            field.name: getattr(sale, field.name)
+            for field in sale._meta.get_fields(include_parents=False)
+            if field.related_model is None
+        }
 
         # Métodos de pago
         data['payment_methods'] = [
@@ -1436,32 +1453,27 @@ def salesList(request):
         ]
 
         # Items
-        data['items'] = salesItems.objects.filter(sale_id=sale).all()
-        data['item_count'] = len(data['items'])
+        items = list(sale.salesitems_set.all())
+        data['items'] = items
+        data['item_count'] = len(items)
 
         # Caja relacionada
         cash_register_sale = sale.cashregistersales_set.first()
         if cash_register_sale:
             cash_register = cash_register_sale.cash_register
-            data['username'] = cash_register.user.username if cash_register.user else "—"
-            data['opening_date'] = cash_register.opening_date
+            data['username'] = cash_register.user.username if cash_register and cash_register.user else "—"
+            data['opening_date'] = cash_register.opening_date if cash_register else "—"
         else:
             data['username'] = "—"
             data['opening_date'] = "—"
 
         sale_data.append(data)
 
-    # Paginación
-    paginator = Paginator(sale_data, per_page)
-    page_obj = paginator.get_page(page_number)
-
     # Para filtros
     payment_types = PaymentType.objects.all()
     users = User.objects.filter(cashregister__isnull=False).distinct()
-    today = datetime.now()
 
     # Limpiar base_url
-    from urllib.parse import urlencode
     def clean_get_params(params):
         clean = {}
         for key in params:
@@ -1474,16 +1486,16 @@ def salesList(request):
 
     context = {
         'page_title': 'Transacciones',
-        'sale_data': page_obj.object_list,
+        'sale_data': sale_data,
         'page_obj': page_obj,
         'base_url': base_url,
         'payment_types': payment_types,
         'users': users,
         'date_from': date_from,
-        'today': datetime.now().date().strftime('%Y-%m-%d'),
+        'today': today.strftime('%Y-%m-%d'),
     }
-    return render(request, 'posApp/sales.html', context)
 
+    return render(request, 'posApp/sales.html', context)
 
 def expense_list(request):
     today = now().date()

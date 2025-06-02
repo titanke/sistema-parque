@@ -413,10 +413,11 @@
   
       const change = totalPagado - total;
   
-      // Mostrar en campos ocultos si es necesario
       $('[name="tendered_amount"]').val(totalPagado.toFixed(2));
       $('[name="amount_change"]').val(change.toFixed(2));
-      $('#payment_change').val(change.toFixed(2)); // este es visible en el formulario
+      $('#payment_change').val(change.toFixed(2)); 
+
+
     }
   
 
@@ -460,7 +461,7 @@
         grand_total = sub_total + tax_amount - descuento;
         $('#grand_total').text(parseFloat(grand_total));
         $('[name="grand_total"]').val(parseFloat(grand_total));
-        
+        calcularVuelto();
       }
 
     function togglePaymentFields() {
@@ -556,7 +557,7 @@
                         $(this).val(maxQty); // Limitar la cantidad a la disponible
                         alert(`No puedes agregar más de ${maxQty} unidades del producto.`);
                     }
-                    calcularVuelto()
+                    
                     calc()
                 })
                 tr.find('.rem-item').click(function() {
@@ -596,11 +597,27 @@
 
             const grandTotal = parseFloat($('#grand_total').text()) || 0;
 
-            if (grandTotal == 0) {
-              alert("No se selecciono una cantidad de productos valida");
-              return;
-            }
 
+            $('#POS-field table tbody tr').each(function() {
+              qty = $(this).find('[name="qty[]"]').val();
+ 
+            });
+
+
+            let valid = true;
+
+            $('#POS-field table tbody tr').each(function() {
+                const qty = parseFloat($(this).find('[name="qty[]"]').val());
+                if (!qty || qty <= 0) {
+                    valid = false;
+                    return false; 
+                }
+            });
+      
+            if (!valid) {
+                alert("Hay una cantidad inválida (0 o vacía). Verifica los productos.");
+                return; 
+            }
   
             if (totalPagado < grandTotal) {
               alert("El monto total ofrecido es menor al total de la venta.");

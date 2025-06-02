@@ -1,4 +1,6 @@
 {% load humanize %}
+{% load format_filters %}
+
 <style>
     #uni_modal .modal-footer {
         display: none;
@@ -133,7 +135,7 @@
                 {% endif %}
             </div>
             <div class="col-3">{{ item.qty|floatformat:0 }}</div>
-            <div class="col-4 text-end">S/ {{ item.total|floatformat:2 }}</div>
+            <div class="col-4 text-end">S/ {{ item.total|punto_decimal }}</div>
         </div>
         {% endfor %}
 
@@ -142,7 +144,7 @@
         <div>
             <div class="d-flex justify-content-between">
                 <div class="fw-bold">Total</div>
-                <div>S/ {{ transaction.grand_total|floatformat:2 }}</div>
+                <div>S/ {{ transaction.grand_total|punto_decimal }}</div>
             </div>
         </div>
 
@@ -152,7 +154,7 @@
         {% for payment in salesPayments %}
         <div class="d-flex justify-content-between">
             <div>{{ payment.payment_type.name }}</div>
-            <div>S/ {{ payment.amount|floatformat:2 }}</div>
+            <div>S/ {{ payment.amount|punto_decimal }}</div>
         </div>
         {% endfor %}
 
@@ -161,11 +163,11 @@
         <div style="margin-bottom: 2px;">
             <div class="d-flex justify-content-between fw-bold">
                 <div>Recibido</div>
-                <div>S/ {{ transaction.tendered_amount|floatformat:2 }}</div>
+                <div>S/ {{ transaction.tendered_amount|punto_decimal }}</div>
             </div>
             <div class="d-flex justify-content-between fw-bold">
                 <div>Vuelto</div>
-                <div>S/ {{ transaction.amount_change|floatformat:2 }}</div>
+                <div>S/ {{ transaction.amount_change|punto_decimal }}</div>
             </div>
         </div>
 

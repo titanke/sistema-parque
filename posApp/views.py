@@ -1575,8 +1575,8 @@ def receipt_pdf(request):
     # Parámetros de diseño
     ticket_width = 80 * mm
     line_height = 4 * mm
-    top_margin = 0 * mm
-    bottom_margin = 0 * mm
+    top_margin = -1 * mm
+    bottom_margin = -4 * mm
 
     # Calcular líneas fijas y dinámicas
     fixed_lines = 24  # logo+titulos+separadores+datos+headers+total+pie etc.

@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from auditlog.models import AuditlogHistoryField
+
 # Create your models here.
 
 
@@ -100,7 +101,7 @@ class Expense(models.Model):
     def __str__(self):
         return self.description
 auditlog.register(CashRegister)
-    
+   
     
 class Sales(models.Model):
     code = models.CharField(max_length=100)
@@ -113,19 +114,15 @@ class Sales(models.Model):
     amount_change = models.FloatField(default=0)
     date_added = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now=True)
-    history = AuditlogHistoryField()  
 
     class Meta:
         indexes = [
             models.Index(fields=["date_added"]),
         ]
-    __auditlog_exclude__ = ['create', 'update']
-
+        # Aquí defines los eventos que quieres registrar
 
     def __str__(self):
         return self.code
-auditlog.register(Sales)
-    
 
 class CashRegisterSales(models.Model):
     cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE)

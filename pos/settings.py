@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'posApp.apps.posAppConfig',
     'django.contrib.humanize',
+    'auditlog',
+
 ]
 
 MIDDLEWARE = [
@@ -60,6 +62,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'auditlog.middleware.AuditlogMiddleware',
+
 ]
 
 ROOT_URLCONF = 'pos.urls'
@@ -87,20 +91,20 @@ WSGI_APPLICATION = 'pos.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 #
-#DATABASES = {
-#    'default': {
-#       'ENGINE': 'django.db.backends.sqlite3',
- #       'NAME': BASE_DIR / 'db.sqlite3'
- #  }
-#}
-
-
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('MYSQL_URL')
-    )
+  'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3'
+   }
 }
+
+
+#
+#DATABASES = {
+ #   'default': dj_database_url.config(
+ #       default=os.getenv('MYSQL_URL')
+  #  )
+#}
 
 
 # Password validation
@@ -121,6 +125,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUDITLOG_TWO_STEP_MIGRATION = False
+AUDITLOG_DISABLE_REMOTE_ADDR = False
+AUDITLOG_CID_GETTER = None
+AUDITLOG_CID_HEADER = None
+AUDITLOG_STORE_JSON_CHANGES = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

@@ -9,3 +9,4 @@ dj-database-url
 dotenv
 reportlab
 faker
+django-auditlog

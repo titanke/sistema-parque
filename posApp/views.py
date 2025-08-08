@@ -341,21 +341,47 @@ def manage_payment(request):
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
+@login_required
 def save_payment(request):
-    data =  request.POST
-    resp = {'status':'failed'}
-    try:
-        if (data['id']).isnumeric() and int(data['id']) > 0 :
-            save_payment = PaymentType.objects.filter(id = data['id']).update(name=data['name'],status = data['status'])
-        else:
-            save_payment = PaymentType(name=data['name'],status = data['status'])
-            save_payment.save()
-        resp['status'] = 'success'
-        messages.success(request, 'Tipo de pago agregado correctamente.')
-    except:
-        resp['status'] = 'failed'
-    return HttpResponse(json.dumps(resp), content_type="application/json")
+    data = request.POST
+    resp = {'status': 'failed'}
 
+    name = data.get('name', '').strip().upper()  # Convertir a MAYÚSCULAS
+    status = data.get('status', '')
+
+    try:
+        # Edición
+        if data.get('id') and data['id'].isnumeric() and int(data['id']) > 0:
+            payment_id = int(data['id'])
+            payment = PaymentType.objects.get(id=payment_id)
+
+            # Validar nombre duplicado (excepto el mismo registro)
+            if PaymentType.objects.filter(name=name).exclude(id=payment_id).exists():
+                return JsonResponse({'status': 'failed', 'msg': 'Ya existe un tipo de pago con ese nombre.'})
+
+            payment.name = name
+            payment.status = status
+            payment.save()
+
+            resp['status'] = 'success'
+            resp['msg'] = 'Tipo de pago editado correctamente.'
+            messages.success(request, resp['msg'])
+
+        else:
+            # Creación
+            if PaymentType.objects.filter(name=name).exists():
+                return JsonResponse({'status': 'failed', 'msg': 'Ya existe un tipo de pago con ese nombre.'})
+
+            PaymentType.objects.create(name=name, status=status)
+            resp['status'] = 'success'
+            resp['msg'] = 'Tipo de pago agregado correctamente.'
+            messages.success(request, resp['msg'])
+
+    except Exception as e:
+        resp['status'] = 'failed'
+        resp['msg'] = str(e)
+
+    return JsonResponse(resp)
 
 
 @login_required
@@ -894,23 +920,41 @@ def delete_size(request):
     return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
-
 @login_required
 def save_category(request):
-    data =  request.POST
-    resp = {'status':'failed'}
-    try:
-        if (data['id']).isnumeric() and int(data['id']) > 0 :
-            save_category = Category.objects.filter(id = data['id']).update(name=data['name'], description = data['description'],status = data['status'])
-        else:
-            save_category = Category(name=data['name'], description = data['description'],status = data['status'])
-            save_category.save()
-        resp['status'] = 'success'
-        messages.success(request, 'Categoria agregada correctamente.')
-    except:
-        resp['status'] = 'failed'
-    return HttpResponse(json.dumps(resp), content_type="application/json")
+    data = request.POST
+    resp = {'status': 'failed'}
 
+    name = data.get('name', '').strip().upper() 
+    description = data.get('description', '')
+    status = data.get('status', '')
+
+    try:
+        if data.get('id') and data['id'].isnumeric() and int(data['id']) > 0:
+            category_id = int(data['id'])
+            category = Category.objects.get(id=category_id)
+
+            if Category.objects.filter(name=name).exclude(id=category_id).exists():
+                return JsonResponse({'status': 'failed', 'msg': 'Ya existe una categoría con ese nombre.'})
+
+            category.name = name
+            category.description = description
+            category.status = status
+            category.save()
+
+            return JsonResponse({'status': 'success'})
+
+        else:
+            if Category.objects.filter(name=name).exists():
+                return JsonResponse({'status': 'failed', 'msg': 'Ya existe una categoría con ese nombre.'})
+
+            Category.objects.create(name=name, description=description, status=status)
+
+            return JsonResponse({'status': 'success'})
+
+    except Exception as e:
+        # Importante: devolver el mensaje de error real
+        return JsonResponse({'status': 'failed', 'msg': str(e)})
 
 @login_required
 @user_passes_test(lambda u: u.is_superuser)
@@ -1014,11 +1058,11 @@ def test(request):
 def save_product(request):
     data = request.POST
     resp = {'status': 'failed'}
+    name = data.get('name', '').strip().upper()  # Convertir a MAYÚSCULAS
 
     deleted_features = data.get('deleted_features', '').split(',')
     deleted_features = [int(feature_id) for feature_id in deleted_features if feature_id.isdigit()]
 
-    # Eliminar las características marcadas como eliminadas
     ProductFeature.objects.filter(id__in=deleted_features).delete()
 
     try:
@@ -1026,10 +1070,14 @@ def save_product(request):
         id = data.get('id', '')
         id = int(id) if id.isnumeric() else None
 
+
         # Validar datos necesarios
-        if not data.get('code') or not data.get('name') or not data.get('price'):
+        if not data.get('name') or not data.get('price'):
             resp['msg'] = "Código, nombre y precio son campos obligatorios."
             return HttpResponse(json.dumps(resp), content_type="application/json")
+        
+        if Products.objects.filter(name=name).exists():
+            return JsonResponse({'status': 'failed', 'msg': 'Ya existe un producto con ese nombre.'})
 
         # Validar precios
         try:
@@ -1046,23 +1094,18 @@ def save_product(request):
             resp['msg'] = "Categoría seleccionada no es válida."
             return HttpResponse(json.dumps(resp), content_type="application/json")
 
-        # Verificar duplicados
-        if id:
-            duplicate_check = Products.objects.exclude(id=id).filter(code=data['code']).exists()
-        else:
-            duplicate_check = Products.objects.filter(code=data['code']).exists()
 
-        if duplicate_check:
-            resp['msg'] = "El código del producto ya existe en la base de datos."
-            return HttpResponse(json.dumps(resp), content_type="application/json")
 
         # Guardar o actualizar producto
         if id:
+            
+            if Products.objects.filter(name=name).exclude(id=id).exists():
+                return JsonResponse({'status': 'failed', 'msg': 'Ya existe un producto con ese nombre.'})
+
             # Actualización de producto existente
             product = Products.objects.get(id=id)
-            product.code = data['code']
             product.category_id = category
-            product.name = data['name']
+            product.name = data['name'].upper()
             product.description = data['description']
             product.price = price
             product.p_mayor = p_mayor
@@ -1070,10 +1113,10 @@ def save_product(request):
             product.status = int(data['status'])
         else:
             # Crear nuevo producto
+            
             product = Products.objects.create(
-                code=data['code'],
                 category_id=category,
-                name=data['name'],
+                name=data['name'].upper(),
                 description=data['description'],
                 price=price,
                 p_mayor=p_mayor,
@@ -1189,7 +1232,7 @@ def pos(request):
             opening_date__date=today
         )
 
-    payment = PaymentType.objects.all()
+    payment = PaymentType.objects.filter(status=1)
     mostrar_modal = not cash_register.exists()  
 
     product_json = []
@@ -1731,8 +1774,8 @@ def delete_sale(request):
                         feature.save()
         
         # Eliminar la venta y los items asociados
-        Sales.objects.filter(id=id).delete()
-        
+        sale = Sales.objects.get(id=id)
+        sale.delete()        
         resp['status'] = 'success'
         if restore_stock:
             messages.success(request, 'Historial de venta eliminado y stock restaurado.')

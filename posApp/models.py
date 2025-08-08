@@ -3,22 +3,25 @@ from unicodedata import category
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-
+from auditlog.registry import auditlog
+from auditlog.models import AuditlogHistoryField
 # Create your models here.
 
 
 class Category(models.Model):
-    name = models.TextField()
+    name = models.TextField(unique=True)
     description = models.TextField()
     status = models.IntegerField(default=1) 
     date_added = models.DateTimeField(default=timezone.now) 
-    date_updated = models.DateTimeField(auto_now=True) 
+    date_updated = models.DateTimeField(auto_now=True)    
+    history = AuditlogHistoryField()  
 
     def __str__(self):
         return self.name
+    
+auditlog.register(Category)
 
 class Products(models.Model):
-    code = models.CharField(max_length=100)
     category_id = models.ForeignKey(Category, on_delete=models.RESTRICT)
     name = models.TextField()
     description = models.TextField()
@@ -29,6 +32,7 @@ class Products(models.Model):
     date_added = models.DateTimeField(default=timezone.now) 
     date_updated = models.DateTimeField(auto_now=True)
     image = models.URLField(max_length=200, blank=True, null=True)  
+    history = AuditlogHistoryField()  
 
     #image = models.ImageField(upload_to='products/', null=True, blank=True)  
     """
@@ -38,7 +42,10 @@ class Products(models.Model):
       
     """
     def __str__(self):
-        return self.code + " - " + self.name
+        return self.name
+
+auditlog.register(Products)
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Products, on_delete=models.CASCADE)
@@ -58,34 +65,41 @@ class SalesPayment(models.Model):
 
     def __str__(self):
         return f"{self.sale.code} - {self.payment_type.name} - {self.amount}"
+    
 
 class PaymentType(models.Model):
     name = models.TextField()
     status = models.IntegerField(default=1) 
     date_added = models.DateTimeField(default=timezone.now) 
     date_updated = models.DateTimeField(auto_now=True) 
+    history = AuditlogHistoryField()  
 
     def __str__(self):
         return self.name
     
+auditlog.register(PaymentType)
     
 class CashRegister(models.Model):
     opening_date = models.DateTimeField(default=timezone.now)
     close_date = models.DateTimeField(null=True, blank=True)
     sales = models.ManyToManyField('Sales', through='CashRegisterSales')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    history = AuditlogHistoryField()  
 
     def __str__(self):
         return f"Caja {self.id}"
+auditlog.register(CashRegister)
 
 class Expense(models.Model):
     description = models.CharField(max_length=255)
     amount = models.FloatField()
     expense_date = models.DateTimeField(default=timezone.now)
     cash_register = models.ForeignKey(CashRegister, on_delete=models.CASCADE, related_name='expenses', default=1) 
+    history = AuditlogHistoryField()  
 
     def __str__(self):
         return self.description
+auditlog.register(CashRegister)
     
     
 class Sales(models.Model):
@@ -99,14 +113,18 @@ class Sales(models.Model):
     amount_change = models.FloatField(default=0)
     date_added = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now=True)
-    
+    history = AuditlogHistoryField()  
+
     class Meta:
         indexes = [
             models.Index(fields=["date_added"]),
         ]
+    __auditlog_exclude__ = ['create', 'update']
+
 
     def __str__(self):
         return self.code
+auditlog.register(Sales)
     
 
 class CashRegisterSales(models.Model):

@@ -4,9 +4,10 @@ flask
 qrcode
 pillow
 gunicorn
-mysqlclient
+psycopg2-binary
 dj-database-url
 dotenv
 reportlab
 faker
 django-auditlog
+

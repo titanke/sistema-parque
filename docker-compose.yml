@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:1.21-alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    depends_on:
+      - web
+
+  web:
+    build: .
+    container_name: django_web
+    command: gunicorn --bind 0.0.0.0:8000 pos.wsgi:application
+    expose:
+      - 8000
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: 'postgres://santo:s4nto__1@db:5432/sd_2025'
+      SECRET_KEY: 'django-insecure--w(dug*va_megpa25w$gmv8o6+f8!fg_*m1^u)sdsz25pab0hicm.'
+      DEBUG: 'False'
+      ALLOWED_HOSTS: '161.132.48.207'
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: sd_2025
+      POSTGRES_USER: santo
+      POSTGRES_PASSWORD: s4nto__1
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+volumes:
+  postgres_data:

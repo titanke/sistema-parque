@@ -94,6 +94,9 @@ WSGI_APPLICATION = 'pos.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 #
+##DATABASE_URL = os.environ.get('DATABASE_URL')
+
+#
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
@@ -109,12 +112,7 @@ else:
         }
     }
 
-#
-#DATABASES = {
- #   'default': dj_database_url.config(
- #       default=os.getenv('MYSQL_URL')
-  #  )
-#}
+
 
 
 # Password validation
